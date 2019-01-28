@@ -1,4 +1,5 @@
 # Apple-TVBinding (org.openhab.binding.appletv)
+<hr>Release: INITIAL/WORK IN PROGRESS, check newer branch<hr>
 
 This openHAB 2 Binding implements control for the Apple-TV devices. This includes sending remote keys (control the Apple-TV from openHAB). An upcoming version will also process the status updates to provide information about the media being played.
 

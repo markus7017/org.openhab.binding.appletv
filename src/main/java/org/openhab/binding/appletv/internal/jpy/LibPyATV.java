@@ -5,9 +5,8 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * SPDX-License-Identifier: EPL-2.0
  */
+
 package org.openhab.binding.appletv.internal.jpy;
 
 import java.io.InputStream;
@@ -54,11 +53,13 @@ public class LibPyATV {
     public LibPyATV(AppleTVConfiguration thingConfig) {
 
         try {
+            logger.debug("Initialize PyATV (current installation path: '{}')", thingConfig.libPath);
             this.config = thingConfig;
 
             // if ((config.libPath == null) || config.libPath.isEmpty()) {
             libPath = Files.createTempDirectory("ohlib-");
             config.libPath = libPath.toString();
+            logger.info("Modules will be installed in '{}'", config.libPath);
             // } else {
             // libPath = Paths.get(config.libPath);
             // }
@@ -67,42 +68,70 @@ public class LibPyATV {
             String platform = System.getProperty("os.arch").toLowerCase();
             logger.debug("Platform info: '{}', architecture: '{}'", os, platform);
 
+            List<String> cleanedExtraPaths = new ArrayList<>();
+            cleanedExtraPaths.add(libPath.toString());
+
             String jpyPath = libPath.toString();
             String jpyLib = "";
+            System.setProperty("jpy.debug", "true");
+            if (os.contains("linux") || os.contains("mac")) {
+                System.setProperty("jpy.pythonExecutable", "/usr/bin/python3");
+                System.setProperty("jpy.pythonPrefix", "/usr");
+            } else {
+                throw new Exception(
+                        "OS '" + os + "' not supported yet, please contact the author and provde platform information");
+            }
+
             if (os.contains("mac")) {
-                jpyLib = "lib/jpy/lib.macosx-x86_64-3.6";
                 System.setProperty("jpy.pythonLib",
                         "/usr/local/Cellar/python/3.6.5/Frameworks/Python.framework/Versions/3.6/lib/libpython3.6.dylib");
+                jpyLib = "lib/jpy/lib.macosx-x86_64-3.6";
+                System.setProperty("jpy.jpyLib", jpyPath + "/jpy.so");
+                System.setProperty("jpy.jdlLib", jpyPath + "/jdl.so");
             } else if (os.contains("linux") && platform.contains("arm")) { // Raspberry
+                // jpyLib = "lib/jpy/lib.linux-armv7l-3.5";
+                // System.setProperty("jpy.jpyLib", "jpy.cpython-35m-arm-linux-gnueabihf.so");
+                // System.setProperty("jpy.jdlLib", "jdl.cpython-35m-arm-linux-gnueabihf.so");
                 jpyLib = "lib/jpy/lib.linux-armv7l-3.6";
-                System.setProperty("jpy.pythonLib",
-                        // "/usr/lib/python3.5/config-3.5m-arm-linux-gnueabihf/libpython3.5.so");
-                        "/usr/local/lib/libpython3.6m.a");
+                System.setProperty("jpy.jpyLib", jpyPath + "/jpy.so");
+                System.setProperty("jpy.jdlLib", jpyPath + "/jdl.so");
+                // System.setProperty("jpy.pythonLib", "/usr/lib/arm-linux-gnueabihf/libpython3.5m.so");
+                System.setProperty("jpy.pythonLib", "/usr/local/lib/libpython3.6m.so");
+            } else if (os.contains("linux") && platform.contains("amd64")) { // Synology
+                // jpyLib = "lib/jpy/lib.linux-armv7l-3.5";
+                System.setProperty("jpy.pythonLib", "/usr/lib/arm-linux-gnueabihf/libpython3.5m.so");
+                System.setProperty("jpy.jpyLib", "jpy.cpython-35m-amd64-linux-gnueabihf.so");
+                System.setProperty("jpy.jdlLib",
+                        "/usr/lib/python3/dist-packages/jdl.cpython-35m-amd64-linux-gnueabihf.so");
+            } else {
+                throw new Exception(
+                        "Architecture not supported yet, please contact the author and provde platform information");
             }
+            cleanedExtraPaths.add("/usr/local/lib/python3.6/dist-packages");
+            cleanedExtraPaths.add("/usr/local/lib/python3.6/site-packages");
+            cleanedExtraPaths.add("/usr/local/lib/python3.5/dist-packages");
+            cleanedExtraPaths.add("/usr/local/lib/python3.5/site-packages");
+            cleanedExtraPaths.add("/usr/lib/python3/dist-packages");
+            cleanedExtraPaths.add("/usr/lib/python3/site-packages");
 
             List<String> extraPaths = new ArrayList<>();
             extraPaths.add("classpath:lib/pyatv.zip"); // PyATV library
             extraPaths.add("classpath:lib/jpy-0.10.0-SNAPSHOT.jar");
+            if (!jpyLib.isEmpty()) {
+                logger.debug("jpyLib={}", jpyLib);
+                extraPaths.add("classpath:" + jpyLib + "/jpy.so"); // python_runtime_module
+                extraPaths.add("classpath:" + jpyLib + "/jdl.so"); // python_runtime_module
+                extraPaths.add("classpath:" + jpyLib + "/jpyutil.py"); // python util
+            }
 
-            System.setProperty("jpy.pythonExecutable", "/usr/bin/python");
-            System.setProperty("jpy.pythonPrefix", "/usr");
-            System.setProperty("jpy.jpyLib", jpyPath + "/jpy.so");
-            System.setProperty("jpy.jdlLib", jpyPath + "/jdl.so");
-            System.setProperty("jpy.debug", "true");
-
+            logger.debug("jpy.pythonExecutable: {}", System.getProperty("jpy.pythonExecutable"));
+            logger.debug("jpy.pythonLib: {}", System.getProperty("jpy.pythonLib"));
             logger.debug("jpy.jpyLib: {}", System.getProperty("jpy.jpyLib"));
             logger.debug("jpy.jdlLib: {}", System.getProperty("jpy.jdlLib"));
-            logger.debug("jpy.pythonLib: {}", System.getProperty("jpy.pythonLib"));
             logger.debug("jpy.pythonPrefix: {}", System.getProperty("jpy.pythonPrefix"));
-            logger.debug("jpy.pythonExecutable: {}", System.getProperty("jpy.pythonExecutable"));
-
-            extraPaths.add("classpath:" + jpyLib + "/jpy.so"); // python_runtime_module
-            extraPaths.add("classpath:" + jpyLib + "/jdl.so"); // python_runtime_module
-            extraPaths.add("classpath:" + jpyLib + "/jpyutil.py"); // python util
 
             // Runtime.getRuntime()
             // .addShutdownHook(new Thread(() -> FileSystemUtils.deleteRecursively(tempDirectory.toFile())));
-            List<String> cleanedExtraPaths = new ArrayList<>();
             extraPaths.forEach(lib -> {
                 if (lib.startsWith("classpath:")) {
                     try {
@@ -125,9 +154,6 @@ public class LibPyATV {
                     cleanedExtraPaths.add(lib);
                 }
             });
-            cleanedExtraPaths.add(libPath.toString());
-            cleanedExtraPaths.add("/usr/local/lib/python3.6/site-packages");
-            cleanedExtraPaths.add("/usr/local/lib/python3.6/dist-packages");
 
             if (!PyLib.isPythonRunning()) {
                 logger.debug("Starting Python");

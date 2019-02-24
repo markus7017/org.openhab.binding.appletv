@@ -451,11 +451,9 @@ class PyATV:
 			return 1
 
 		try:
-			print('exec()')
 			self.args = jargs
 			#loop = asyncio.get_event_loop()
 			#if loop == None:
-			print('Create loop instance')
 			loop = asyncio.new_event_loop()
 			asyncio.set_event_loop(loop)
 			return loop.run_until_complete(_run_application(loop, jargs))

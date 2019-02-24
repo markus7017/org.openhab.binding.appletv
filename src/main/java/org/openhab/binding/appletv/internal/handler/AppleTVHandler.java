@@ -22,9 +22,8 @@ import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
 import org.openhab.binding.appletv.internal.AppleTVConfiguration;
+import org.openhab.binding.appletv.internal.AppleTVLogger;
 import org.openhab.binding.appletv.internal.jpy.LibPyATV;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The {@link AppleTVHandler} is responsible for handling commands, which are
@@ -34,7 +33,7 @@ import org.slf4j.LoggerFactory;
  */
 public class AppleTVHandler extends BaseThingHandler {
 
-    private final Logger logger = LoggerFactory.getLogger(AppleTVHandler.class);
+    private final AppleTVLogger logger = new AppleTVLogger(AppleTVHandler.class, "Handler");
 
     private AppleTVConfiguration config;
     private LibPyATV pyATV = null;
@@ -53,13 +52,13 @@ public class AppleTVHandler extends BaseThingHandler {
 
         // Example for background initialization:
         scheduler.execute(() -> {
-            boolean thingReachable = true; // <background task with long running initialization here>
-            // logger.debug("Start initializing!");
+            logger.info("Initializing AppleTV");
             config = getConfigAs(AppleTVConfiguration.class);
 
             try {
                 pyATV = new LibPyATV(config);
 
+                logger.debug("PyATV installation path: {}", config.libPath);
                 if (!pyATV.getLibPath().equals(config.libPath)) {
                     logger.info("PyATV Library installed in {}", config.libPath);
                     Configuration configuration = this.getConfig();

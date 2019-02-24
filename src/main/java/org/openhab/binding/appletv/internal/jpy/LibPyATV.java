@@ -179,18 +179,31 @@ public class LibPyATV {
         return config.libPath;
     }
 
-    public boolean sendKeys(String keys) {
+    public boolean sendKeys(String commands) {
         try {
-            logger.debug("Sending remote key(s): {}", keys);
+            logger.info("Sending command {} to ip {}, lid {}", commands, config.ipAddress, config.loginId);
 
             String[] args = new String[6];
-            // PyObject res = plugIn.exec("--address 192.168.6.123 --login_id 0xCF670625989EE1EC top_menu");
+            // PyObject res = plugIn.exec("--address 192.168.x.y --login_id 0xXXXXXXXXXXXXXXXX top_menu");
             args[0] = "--debug";
             args[1] = "--address";
             args[2] = config.ipAddress;
             args[3] = "--login_id";
             args[4] = config.loginId;
-            args[5] = keys;
+            args[5] = commands;
+            return (pyATV.exec(args).getIntValue() == 0);
+        } catch (Exception e) {
+            logger.error("Exception on PyATV call: {} ({})", e.getMessage(), e.getClass());
+            return false;
+        }
+    }
+
+    public boolean scan() {
+        try {
+            logger.info("Scan for AppleTV devices");
+
+            String[] args = new String[1];
+            args[0] = "scan";
             return (pyATV.exec(args).getIntValue() == 0);
         } catch (Exception e) {
             logger.error("Exception on PyATV call: {} ({})", e.getMessage(), e.getClass());

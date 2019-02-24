@@ -269,7 +269,9 @@ def cli_handler(loop, jargs):
 		print('exec_command(autodiscover)')
 		return (yield from _handle_autodiscover(args, loop))
 	if args.login_id:
-		print('handle_command({0})'.format(args.login_id))
+		print('handle_command({0})'.format(args.command))
+		print('  ip address={0}'.format(args.address))
+		print('  login_id={0}'.format(args.login_id))
 		return (yield from _handle_commands(args, loop))
 
 	logging.error('To autodiscover an Apple TV, add -a')
@@ -423,6 +425,8 @@ def _pretty_print(data):
 
 class PyATV:
 	def check(self):
+		sys.stdout = open('/tmp/ohpyatv-console.log', 'w')
+		sys.stderr = open('/tmp/ohpyatv-error.log', 'w')
 		print('Hello from PyATV')
 		return 0
 		
@@ -432,7 +436,7 @@ class PyATV:
 		# happens (which would leave resources dangling)
 		@asyncio.coroutine
 		def _run_application(loop, jargs):
-			print('_run_application)=')
+			print('_run_application()')
 			try:
 				return (yield from cli_handler(loop, jargs))
 

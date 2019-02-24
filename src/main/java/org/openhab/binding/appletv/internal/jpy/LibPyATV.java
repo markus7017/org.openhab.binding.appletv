@@ -89,26 +89,25 @@ public class LibPyATV {
                 System.setProperty("jpy.jpyLib", jpyPath + "/jpy.so");
                 System.setProperty("jpy.jdlLib", jpyPath + "/jdl.so");
             } else if (os.contains("linux") && platform.contains("arm")) { // Raspberry
-                // jpyLib = "lib/jpy/lib.linux-armv7l-3.5";
                 // System.setProperty("jpy.jpyLib", "jpy.cpython-35m-arm-linux-gnueabihf.so");
                 // System.setProperty("jpy.jdlLib", "jdl.cpython-35m-arm-linux-gnueabihf.so");
-                jpyLib = "lib/jpy/lib.linux-armv7l-3.6";
+                jpyLib = "lib/jpy/lib.linux-armv7l-3.5";
+                System.setProperty("jpy.pythonLib", "/usr/lib/arm-linux-gnueabihf/libpython3.5m.so");
+                // jpyLib = "lib/jpy/lib.linux-armv7l-3.6";
+                // System.setProperty("jpy.pythonLib", "/usr/local/lib/libpython3.6m.so");
                 System.setProperty("jpy.jpyLib", jpyPath + "/jpy.so");
                 System.setProperty("jpy.jdlLib", jpyPath + "/jdl.so");
-                // System.setProperty("jpy.pythonLib", "/usr/lib/arm-linux-gnueabihf/libpython3.5m.so");
-                System.setProperty("jpy.pythonLib", "/usr/local/lib/libpython3.6m.so");
-            } else if (os.contains("linux") && platform.contains("amd64")) { // Synology
-                // jpyLib = "lib/jpy/lib.linux-armv7l-3.5";
-                System.setProperty("jpy.pythonLib", "/usr/lib/arm-linux-gnueabihf/libpython3.5m.so");
-                System.setProperty("jpy.jpyLib", "jpy.cpython-35m-amd64-linux-gnueabihf.so");
-                System.setProperty("jpy.jdlLib",
-                        "/usr/lib/python3/dist-packages/jdl.cpython-35m-amd64-linux-gnueabihf.so");
+            } else if (os.contains("linux") && platform.contains("x86")) { // Synology
+                jpyLib = "lib/jpy/lib.synology-x86-64-3.5";
+                System.setProperty("jpy.jpyLib", jpyPath + "/jpy.so");
+                System.setProperty("jpy.jdlLib", jpyPath + "/jdl.so");
+                System.setProperty("jpy.pythonLib", "libpython3.5m.so");
             } else {
                 throw new Exception(
                         "Architecture not supported yet, please contact the author and provde platform information");
             }
-            cleanedExtraPaths.add("/usr/local/lib/python3.6/dist-packages");
-            cleanedExtraPaths.add("/usr/local/lib/python3.6/site-packages");
+            // cleanedExtraPaths.add("/usr/local/lib/python3.6/dist-packages");
+            // cleanedExtraPaths.add("/usr/local/lib/python3.6/site-packages");
             cleanedExtraPaths.add("/usr/local/lib/python3.5/dist-packages");
             cleanedExtraPaths.add("/usr/local/lib/python3.5/site-packages");
             cleanedExtraPaths.add("/usr/lib/python3/dist-packages");

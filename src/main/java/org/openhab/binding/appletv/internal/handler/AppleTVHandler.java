@@ -90,7 +90,10 @@ public class AppleTVHandler extends BaseThingHandler {
                 case CHANNEL_REMOTE_KEY:
                 case CHANNEL_REMOTE_SEQ:
                     if (command instanceof StringType) {
-                        pyATV.sendKeys(command.toString());
+                        logger.info("Send command(s): {}", command.toString());
+                        if (!pyATV.sendKeys(command.toString())) {
+                            logger.info("SendKey failed!");
+                        }
                     }
                     break;
             }

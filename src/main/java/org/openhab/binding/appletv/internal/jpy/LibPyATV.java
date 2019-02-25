@@ -97,7 +97,7 @@ public class LibPyATV {
                 // System.setProperty("jpy.pythonLib", "/usr/local/lib/libpython3.6m.so");
                 System.setProperty("jpy.jpyLib", jpyPath + "/jpy.so");
                 System.setProperty("jpy.jdlLib", jpyPath + "/jdl.so");
-            } else if (os.contains("linux") && platform.contains("x86")) { // Synology
+            } else if (os.contains("linux") && (platform.contains("x86_64") || platform.contains("amd64"))) { // Synology
                 jpyLib = "lib/jpy/lib.synology-x86-64-3.5";
                 System.setProperty("jpy.jpyLib", jpyPath + "/jpy.so");
                 System.setProperty("jpy.jdlLib", jpyPath + "/jdl.so");

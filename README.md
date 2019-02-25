@@ -10,20 +10,59 @@ Check put https://community.openhab.org/t/binding-for-apple-tv/65397 for more in
 
 ## Supported Devices, Platforms
 
-Apple-TV 3, latest firmware - fully supported, development environment
-Apple-TV 4 - no information, should work
-Apple-TV 2 - no information, won't expect to work
+Devices
+* Apple-TV 3, latest firmware - fully supported, development environment
+* Apple-TV 4 - no information, should work
+* Apple-TV 2 - no information, won't expect to work
 
-The binding requires a proper installation of Python 3. Open a terminal and run "python3 --version". You need Python 3.5.3 or newer. Currently macOS (10.12) and Linux (Raspberry) are supported.
-Check https://realpython.com/installing-python/ for more information.
+Platforms
+* macOS - dev environment is Mojave, but should also work with Sierra and High Sierra
+* Raspberyy with OpenHabian - default test ebvironment
+* Synology NAS is work in progress
+* others currently not supported - contact author
 
 ## Supported Things
 
-device - represents an Apple-TV
+device - represents an Apple-TV device
 
 # Discovery
 
 Auto discovery is planned for an upcoming release. PyATV already supplies the "scan" and "pair" commands. For now you need to pair your device first (using atvremote cli) and create the thing manually in Paper UI.
+* make sure all required packages have been installed
+* run "atvremote scan" - this will show you the ip address of your Apple TV device
+* run "atvremote pair -r openHAB" -  this will initialte the pairing process
+* On your Appe TV screen go to Settings->General->Remotes
+* you should see the openHAB remote - if not you need to restart the Apple TV
+* select the "openHAB" entry - the Apple TV requests a pairing code
+* enter "1234" - the process should be completed without an error
+* you could terminate the "atvremote pair" command with Ctrl-C
+* you should see the login id, which will be required for the thing configuration 
+
+Proceed with Thing Configuration below
+
+## Binding installation
+
+For now the bindinng is not available on the Eclipse Smart Home Market Place nor part of the openHAB distribution so you need to install it manually.<p>
+
+As described the binding integrates the Phyton-based PyATV project so you need to install Python 3.5 and the required modules:<p>
+* Platform software packages:<br>
+sudo apt-get update<br>
+sudo apt-get install python3.5 python3-pip libpython3.5 python3-jpy<br>
+sudo apt-get install avhi-utils<p>
+Python 3.5 for macOS can be found here: https://www.python.org/downloads/mac-osx/<p>
+
+* Python modules:<br>
+sudo pip3.5 install pyatv zeroconf sh<p>
+On macOS use Homebrew to install the additional Python modules.<p>
+Make sure those modules go into the Python 3.5 folders if you have multiple versions installed (by using the pip3.5 command).<p>
+
+* Verification
+You should verify the installation before installing/configuring the binding:<br>
+atvremote --address <ip address>  --login_id <login id from pairing>  top_menu<p>
+should work without error messages and move the focus on the Apple-TV to the top menu.<p>
+
+* The binding itself<br>
+Copy the binding jar to openHAB's addons folder, add the thing in Paper UI (see below) and restart openHAB.<p>
 
 ## Binding Configuration
 
@@ -31,15 +70,47 @@ There are no textual configuration files.
 
 ## Thing Configuration
 
-(update needed)
+Before adding the thing make sure that all pre-requisites are met and all modules have been installed (see above).
+
+You could use Paper UI to add a thing manually
+* Go to Configuration->Things and click on '+'
+* Select Apple TV Binding
+* fill in the device's ip address and login id as discovered through the pairing process
+* Once you save the configuration the thing should become online
 
 ## Channels
 
 (update needed)
 
+For now the following control commands can be used:<p>
+Remote control commands:
+ - down - Press key down
+ - left - Press key left
+ - menu - Press key menu
+ - next - Press key next
+ - pause - Press key play
+ - play - Press key play
+ - previous - Press key previous
+ - right - Press key right
+ - select - Press key select
+ - set_position - Seek in the current playing media
+ - set_repeat - Change repeat mode
+ - set_shuffle - Change shuffle mode to on or off
+ - stop - Press key stop
+ - top_menu - Go to main menu (long press menu)
+ - up - Press key up
+
+
 ## Full Example
 
-(update needed)
+* items:<p>
+String Atv_Remote "ATV [%s]" {channel="appletv:device:34fc39d8:control#remoteKey"}<p>
+
+* sitemape:<p>
+Switch item=Atv_Remote mappings=[up = "^" ]<br>
+Switch item=Atv_Remote mappings=[left = "<", select = "Sel", right = ">" ]<br>
+Switch item=Atv_Remote mappings=[menu = "Menu", down = "  v   ", play = "Play" ]<br>
+Switch item=Atv_Remote mappings=[previous='Prev', pause='Pause', next='Next']<p>
 
 ## Notes
 

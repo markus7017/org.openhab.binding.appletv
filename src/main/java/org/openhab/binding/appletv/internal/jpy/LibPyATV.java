@@ -101,7 +101,7 @@ public class LibPyATV {
                 jpyLib = "lib/jpy/lib.synology-x86-64-3.5";
                 System.setProperty("jpy.jpyLib", jpyPath + "/jpy.so");
                 System.setProperty("jpy.jdlLib", jpyPath + "/jdl.so");
-                System.setProperty("jpy.pythonLib", "libpython3.5m.so");
+                System.setProperty("jpy.pythonLib", "/usr/lib/x86_64-linux-gnu/libpython3.5m.so");
             } else {
                 throw new Exception(
                         "Architecture not supported yet, please contact the author and provde platform information");

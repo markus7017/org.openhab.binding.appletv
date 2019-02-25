@@ -1,12 +1,22 @@
 # Apple-TVBinding (org.openhab.binding.appletv)
 
-<hr>Release: alpha2, check master branch for stable release<hr>
-
 This openHAB 2 Binding implements control for the Apple-TV devices. This includes sending remote keys (control the Apple-TV from openHAB). An upcoming version will also process the status updates to provide information about the media being played.
 
 Author: markus7017
 Check put https://community.openhab.org/t/binding-for-apple-tv/65397 for more information, questions and contributing ideas. Any comment is welcome!
 
+<hr>Release: alpha2, check master branch for stable release<hr>
+<p>
+Known issues:<br>
+* On macOS Python 3.6 is used, need to change to Python 3.5<br>
+* Channel remoteKey and keySequence needs to be renamed to command and commandSequence (keys are just one control element that can be send)<br>
+* channel keySequence does not work yet when sending more than one command<br>
+* Any other channel is currently not implemented<br>
+* Support for Synology NAS (amd64) is not verified <br>
+<p>
+Please note:<br>
+This is an alpha release, it has bugs, requires manual install etc. Questions, feedback and contributions are welcome (e.g. improving this documentation).<p>
+<hr>
 
 ## Supported Devices, Platforms
 
@@ -17,7 +27,7 @@ Devices
 
 Platforms
 * macOS - dev environment is Mojave, but should also work with Sierra and High Sierra
-* Raspberyy with OpenHabian - default test ebvironment
+* Raspberyy with OpenHabian - default test environment
 * Synology NAS is work in progress
 * others currently not supported - contact author
 
@@ -80,7 +90,12 @@ You could use Paper UI to add a thing manually
 
 ## Channels
 
-(update needed)
+<table>
+<tr><td>Thing</td><td>Description</td></tr>
+<tr><td>remoteKey</td><td>A single command to be send to the Apple-TV - see below for a list of valid commands</td></tr>
+<tr><td>keysSequence</td><td>A sequence of commands to be send to the Apple-TV</td></tr>
+</table>
+<p>
 
 For now the following control commands can be used:<p>
 Remote control commands:

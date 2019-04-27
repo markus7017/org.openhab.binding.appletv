@@ -76,7 +76,6 @@ class GlobalCommands:
         atvs = yield from pyatv.scan_for_apple_tvs(
             self.loop, timeout=self.args.scan_timeout, only_home_sharing=False)
         _print_found_apple_tvs(atvs)
-
         return 0
 
     @asyncio.coroutine
@@ -280,6 +279,8 @@ def cli_handler(loop, jargs):
 
 def _print_found_apple_tvs(atvs, outstream=sys.stdout):
 	print('Found Apple TVs:', file=outstream)
+	device_list = ""
+	i = 0
 	for apple_tv in atvs:
 		if apple_tv.login_id is None:
 			msg = ' - {0} at {1} (home sharing disabled)'.format(
@@ -288,7 +289,19 @@ def _print_found_apple_tvs(atvs, outstream=sys.stdout):
 			msg = ' - {0} at {1} (login id: {2})'.format(
 				apple_tv.name, apple_tv.address, apple_tv.login_id)
 		print(msg, file=outstream)
+		i = i+1
+		if i != 1:
+			device_list =  device_list+", "
+		json = '"name":"{0}", "ip_address":"{1}", "login_id":"{2}"'.format(apple_tv.name, apple_tv.address, apple_tv.login_id)
+		device_list = device_list + "{"+json+"}"
+		#print("json={0}".format(device_list), file=outstream, flush=True)
 
+	device_list = "{ "+device_list+" }"
+	print("device_list={0}".format(device_list), file=outstream, flush=True)
+	f = open("/tmp/ohpyatv-devices.json", "w")
+	f.write('{0}\n'.format(device_list))
+	f.close()
+	
 	print("\nNote: You must use 'pair' with devices "
 	    "that have home sharing disabled", file=outstream)
 
@@ -427,7 +440,7 @@ class PyATV:
 	def check(self):
 		sys.stdout = open('/tmp/ohpyatv-console.log', 'w')
 		sys.stderr = open('/tmp/ohpyatv-error.log', 'w')
-		print('Hello from PyATV')
+		print('Hello from PyATV', flush=True)
 		return 0
 		
 	def exec(self, jargs):

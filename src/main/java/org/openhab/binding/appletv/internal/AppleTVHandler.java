@@ -8,7 +8,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.appletv.internal.handler;
+package org.openhab.binding.appletv.internal;
 
 import static org.openhab.binding.appletv.internal.AppleTVBindingConstants.*;
 
@@ -21,9 +21,6 @@ import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
-import org.openhab.binding.appletv.internal.AppleTVConfiguration;
-import org.openhab.binding.appletv.internal.AppleTVLogger;
-import org.openhab.binding.appletv.internal.jpy.LibPyATV;
 
 /**
  * The {@link AppleTVHandler} is responsible for handling commands, which are
@@ -36,10 +33,11 @@ public class AppleTVHandler extends BaseThingHandler {
     private final AppleTVLogger logger = new AppleTVLogger(AppleTVHandler.class, "Handler");
 
     private AppleTVConfiguration config;
-    private LibPyATV pyATV = null;
+    private AppleTVHandlerFactory handlerFactory;
 
-    public AppleTVHandler(Thing thing) {
+    public AppleTVHandler(Thing thing, AppleTVHandlerFactory handlerFactory) {
         super(thing);
+        this.handlerFactory = handlerFactory;
     }
 
     @Override
@@ -56,17 +54,14 @@ public class AppleTVHandler extends BaseThingHandler {
             config = getConfigAs(AppleTVConfiguration.class);
 
             try {
-                pyATV = new LibPyATV(config);
+                logger.info("PyATV Library installed in {}", config.libPath);
+                Configuration configuration = this.getConfig();
+                configuration.remove("libPath");
+                configuration.put("libPath", handlerFactory.getLibPath());
+                this.updateConfiguration(configuration);
+                logger.debug("Configuration updated.");
 
-                logger.debug("PyATV installation path: {}", config.libPath);
-                if (!pyATV.getLibPath().equals(config.libPath)) {
-                    logger.info("PyATV Library installed in {}", config.libPath);
-                    Configuration configuration = this.getConfig();
-                    configuration.remove("libPath");
-                    configuration.put("libPath", config.libPath);
-                    this.updateConfiguration(configuration);
-                    logger.debug("Configuration updated.");
-                }
+                sendCommands("top_menu");
                 updateStatus(ThingStatus.ONLINE);
             } catch (Exception e) {
                 logger.error("Call to PyATV failed: {} ({})", e.getMessage(), e.getClass());
@@ -91,12 +86,16 @@ public class AppleTVHandler extends BaseThingHandler {
                 case CHANNEL_REMOTE_SEQ:
                     if (command instanceof StringType) {
                         logger.info("Send command(s): {}", command.toString());
-                        if (!pyATV.sendKeys(command.toString())) {
+                        if (!sendCommands(command.toString())) {
                             logger.info("SendKey failed!");
                         }
                     }
                     break;
             }
         }
+    }
+
+    private boolean sendCommands(String commands) {
+        return handlerFactory.sendCommands(commands, config.ipAddress, config.loginId);
     }
 }

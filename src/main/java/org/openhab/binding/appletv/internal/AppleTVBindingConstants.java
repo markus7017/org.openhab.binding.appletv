@@ -10,6 +10,9 @@
  */
 package org.openhab.binding.appletv.internal;
 
+import java.util.Collections;
+import java.util.Set;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 
@@ -26,6 +29,8 @@ public class AppleTVBindingConstants {
 
     // List of all Thing Type UIDs
     public static final ThingTypeUID THING_TYPE_APPLETV = new ThingTypeUID(BINDING_ID, "device");
+    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Collections
+            .singleton(AppleTVBindingConstants.THING_TYPE_APPLETV);
 
     // List of all Channel ids
     public static final String CHGROUP_CONTROL = "control";

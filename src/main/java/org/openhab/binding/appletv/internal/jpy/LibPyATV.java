@@ -16,15 +16,15 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.StringTokenizer;
 
 import org.apache.commons.lang.StringUtils;
 import org.jpy.PyLib;
 import org.jpy.PyModule;
 import org.jpy.PyObject;
-import org.openhab.binding.appletv.internal.AppleTVConfiguration;
+import org.openhab.binding.appletv.internal.AppleTVHandler;
 import org.openhab.binding.appletv.internal.AppleTVHandlerFactory;
 import org.openhab.binding.appletv.internal.AppleTVLogger;
-import org.openhab.binding.appletv.internal.handler.AppleTVHandler;
 
 /**
  * The {@link LibPyATV} wraps the PyATV library
@@ -43,25 +43,22 @@ public class LibPyATV {
     }
 
     private final AppleTVLogger logger = new AppleTVLogger(AppleTVHandlerFactory.class, "PyATV");
-    private AppleTVConfiguration config;
 
     private Path libPath;
     private PyATVProxy pyATV;
 
     private boolean started = false;
 
-    public LibPyATV(AppleTVConfiguration thingConfig) {
+    public LibPyATV(String currentLibPath) {
 
         try {
-            logger.debug("Initialize PyATV (current installation path: '{}')", thingConfig.libPath);
-            this.config = thingConfig;
+            logger.debug("Initialize PyATV (current installation path: '{}')", currentLibPath);
 
-            // if ((config.libPath == null) || config.libPath.isEmpty()) {
+            // if ((currentLibPath == null) || currentLibPath.isEmpty()) {
             libPath = Files.createTempDirectory("ohlib-");
-            config.libPath = libPath.toString();
-            logger.info("Modules will be installed in '{}'", config.libPath);
+            logger.info("Modules will be installed in '{}'", libPath.toString());
             // } else {
-            // libPath = Paths.get(config.libPath);
+            // libPath = Paths.get(currentLibPath);
             // }
 
             String os = System.getProperty("os.name").toLowerCase();
@@ -169,29 +166,37 @@ public class LibPyATV {
                 throw new Exception("Unable to initialize PyATV access");
             }
             pyATV.check();
-            sendKeys("top_menu");
         } catch (Exception e) {
             logger.error("Unable to start Python (jpy): {} ({})", e.getMessage(), e.getClass());
         }
     }
 
     public String getLibPath() {
-        return config.libPath;
+        return libPath.toString();
     }
 
-    public boolean sendKeys(String commands) {
+    public boolean sendCommands(String commands, String ipAddress, String loginId) {
         try {
-            logger.info("Sending command {} to ip {}, lid {}", commands, config.ipAddress, config.loginId);
+            logger.info("Sending command {} to ip {}, lid {}", commands, ipAddress, loginId);
 
-            String[] args = new String[6];
+            String[] args = new String[20];
             // PyObject res = plugIn.exec("--address 192.168.x.y --login_id 0xXXXXXXXXXXXXXXXX top_menu");
+            int a = 1;
             args[0] = "--debug";
-            args[1] = "--address";
-            args[2] = config.ipAddress;
-            args[3] = "--login_id";
-            args[4] = config.loginId;
-            args[5] = commands;
-            return (pyATV.exec(args).getIntValue() == 0);
+            if (!ipAddress.isEmpty()) {
+                args[a++] = "--address";
+                args[a++] = ipAddress;
+            }
+            if (!loginId.isEmpty()) {
+                args[a++] = "--login_id";
+                args[a++] = loginId;
+            }
+
+            StringTokenizer tokenizer = new StringTokenizer(commands, " ");
+            while (tokenizer.hasMoreElements()) {
+                args[a++] = tokenizer.nextToken();
+            }
+            return pyATV.exec(args).getIntValue() == 1;
         } catch (Exception e) {
             logger.error("Exception on PyATV call: {} ({})", e.getMessage(), e.getClass());
             return false;

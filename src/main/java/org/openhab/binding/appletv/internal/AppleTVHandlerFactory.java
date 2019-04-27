@@ -10,9 +10,9 @@
  */
 package org.openhab.binding.appletv.internal;
 
-import java.util.Collections;
+import static org.openhab.binding.appletv.internal.AppleTVBindingConstants.SUPPORTED_THING_TYPES_UIDS;
+
 import java.util.Map;
-import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -21,7 +21,7 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandlerFactory;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandlerFactory;
-import org.openhab.binding.appletv.internal.handler.AppleTVHandler;
+import org.openhab.binding.appletv.internal.jpy.LibPyATV;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -33,11 +33,11 @@ import org.osgi.service.component.annotations.Component;
  * @author markus7017 - Initial contribution
  */
 @NonNullByDefault
-@Component(configurationPid = "binding.appletv", service = ThingHandlerFactory.class)
+@Component(service = { ThingHandlerFactory.class, AppleTVHandlerFactory.class }, configurationPid = "binding.appletv")
+// @Component(configurationPid = "binding.appletv", service = ThingHandlerFactory.class)
 public class AppleTVHandlerFactory extends BaseThingHandlerFactory {
-    private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Collections
-            .singleton(AppleTVBindingConstants.THING_TYPE_APPLETV);
     private final AppleTVLogger logger = new AppleTVLogger(AppleTVHandlerFactory.class, "Factory");
+    private @Nullable LibPyATV pyATV = null;
 
     /**
      * Activate the bundle: save properties
@@ -52,6 +52,8 @@ public class AppleTVHandlerFactory extends BaseThingHandlerFactory {
     protected void activate(ComponentContext componentContext, Map<String, Object> configProperties) {
         super.activate(componentContext);
         logger.debug("Activate HandlerFactory");
+        pyATV = new LibPyATV("");
+        logger.debug("PyATV installation path: {}", pyATV.getLibPath());
     }
 
     @Override
@@ -64,9 +66,21 @@ public class AppleTVHandlerFactory extends BaseThingHandlerFactory {
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
 
         if (AppleTVBindingConstants.THING_TYPE_APPLETV.equals(thingTypeUID)) {
-            return new AppleTVHandler(thing);
+            return new AppleTVHandler(thing, this);
         }
 
         return null;
+    }
+
+    public boolean sendCommands(String commands, String ipAddress, String loginId) {
+        try {
+            return pyATV.sendCommands(commands, ipAddress, loginId);
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    String getLibPath() {
+        return pyATV.getLibPath();
     }
 }

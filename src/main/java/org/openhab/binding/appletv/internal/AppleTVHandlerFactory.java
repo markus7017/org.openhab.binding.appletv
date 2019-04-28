@@ -80,6 +80,10 @@ public class AppleTVHandlerFactory extends BaseThingHandlerFactory {
         return pyATV.scanDevices();
     }
 
+    public Map<String, Object> updatePlayStatus(String ipAddress, String loginId) {
+        return pyATV.updatePlayStatus(ipAddress, loginId);
+    }
+
     String getLibPath() {
         return pyATV.getLibPath();
     }

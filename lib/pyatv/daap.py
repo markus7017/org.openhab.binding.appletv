@@ -131,6 +131,6 @@ class DaapRequester:
     def _log_response(text, data, is_daap):
         if _LOGGER.isEnabledFor(logging.INFO):
             formatted = data
-            if is_daap:
-                formatted = dmap.pprint(data, lookup_tag)
-            _LOGGER.debug(text, formatted)
+            #if is_daap:
+            #   formatted = dmap.pprint(data, lookup_tag)
+            #_LOGGER.debug(text, formatted)

@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -96,9 +95,6 @@ public class AppleTVDiscoveryService extends AbstractDiscoveryService {
         // Example for background initialization:
         logger.info("Starting Apple-TV discovery");
         try {
-            // String json = "{ \"devices\": [ { \"name\":\"Apple TV (Wohnzimmer)\", \"ipAddress\":\"192.168.6.123\",
-            // \"loginId\":\"00000000-3c46-b404-ba3b-d486cfaf4dc7\" }, { \"name\":\"Apple TV Johannes\",
-            // \"ipAddress\":\"192.168.6.122\", \"loginId\":\"00000000-3d73-a8fc-6257-28b2fada4c24\" } ] }";
             String jsonDevices = handlerFactory.scanDevices();
 
             Gson gson = new Gson();
@@ -160,7 +156,7 @@ public class AppleTVDiscoveryService extends AbstractDiscoveryService {
 
             logger.info("Starting background discovery");
             if (discoveryJob == null || discoveryJob.isCancelled()) {
-                discoveryJob = scheduler.scheduleWithFixedDelay(this::startScan, 20, 15 * 60, TimeUnit.SECONDS);
+                // discoveryJob = scheduler.scheduleWithFixedDelay(this::startScan, 20, 15 * 60, TimeUnit.SECONDS);
             }
         }
     }

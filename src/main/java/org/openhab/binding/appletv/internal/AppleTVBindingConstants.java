@@ -48,5 +48,37 @@ public class AppleTVBindingConstants {
     public static final String CHANNEL_REPEAT_STATE = "repeatState";
     public static final String CHANNEL_ALBUM = "album";
 
-    public static final String JPY_DEVICE_FILE = "/tmp/ohpyatv-devices.json";
+    // PyATV commands
+    public static final String PLAYSTATUS_STATE = "play_state";
+    public static final String PLAYSTATUS_POSITION = "position";
+    public static final String PLAYSTATUS_TTIME = "total_time";
+    public static final String PLAYSTATUS_REPEAT = "repeat";
+    public static final String PLAYSTATUS_SHUFFLE = "shiffle";
+    public static final String PLAYSTATUS_TITLE = "title";
+    public static final String PLAYSTATUS_ALBUM = "album";
+    public static final String PLAYSTATUS_ARTIST = "artist";
+    public static final String PLAYSTATUS_GENRE = "genre";
+    public static final String PLAYSTATUS_MEDIA_TYPE = "media_type";
+    public static final String PLAYSTATUS_ARTWORK_URL = "artwork_url";
+
+    // Media types
+    public static final int MEDIA_TYPE_UNKNOWN = 1;
+    public static final int MEDIA_TYPE_VIDEO = 2;
+    public static final int MEDIA_TYPE_MUSIC = 3;
+    public static final int MEDIA_TYPE_TV = 4;
+
+    // Play state
+    public static final int PLAY_STATE_IDLE = 0;
+    public static final int PLAY_STATE_NO_MEDIA = 1;
+    public static final int PLAY_STATE_LOADING = 2;
+    public static final int PLAY_STATE_PAUSED = 3;
+    public static final int PLAY_STATE_PLAYING = 4;
+    public static final int PLAY_STATE_FAST_FORWARD = 5;
+    public static final int PLAY_STATE_FAST_BACKWARD = 6;
+
+    // Repeat state
+    public static final int REPEAT_STATE_OFF = 0;
+    public static final int REPEAT_STATE_TRACK = 1;
+    public static final int REPEAT_STATE_ALL = 2;
+
 }

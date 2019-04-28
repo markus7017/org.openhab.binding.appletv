@@ -8,6 +8,7 @@ from abc import (ABCMeta, abstractmethod, abstractproperty)
 
 from pyatv import (convert, exceptions)
 
+import pyatv_api
 
 # TODO: make these methods more pretty and safe
 def _get_first_sentence_in_pydoc(obj):
@@ -136,6 +137,8 @@ class Playing:
 
         if self.title is not None:
             output.append('     Title: {0}'.format(self.title))
+            print('title={0}'.format(str(self.title)))
+            pyatv_apijavaPyATV.updateStatusString("title", str(self.title))
 
         if self.artist is not None:
             output.append('    Artist: {0}'.format(self.artist))

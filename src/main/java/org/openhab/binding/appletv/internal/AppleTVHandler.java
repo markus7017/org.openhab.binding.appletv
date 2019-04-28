@@ -12,6 +12,8 @@ package org.openhab.binding.appletv.internal;
 
 import static org.openhab.binding.appletv.internal.AppleTVBindingConstants.*;
 
+import java.util.Map;
+
 import org.eclipse.smarthome.config.core.Configuration;
 import org.eclipse.smarthome.core.library.types.StringType;
 import org.eclipse.smarthome.core.thing.ChannelUID;
@@ -60,6 +62,9 @@ public class AppleTVHandler extends BaseThingHandler {
                 configuration.put("libPath", handlerFactory.getLibPath());
                 this.updateConfiguration(configuration);
                 logger.debug("Configuration updated.");
+
+                Map<String, Object> status = handlerFactory.updatePlayStatus(config.ipAddress, config.loginId);
+
                 updateStatus(ThingStatus.ONLINE);
             } catch (Exception e) {
                 logger.error("Call to PyATV failed: {} ({})", e.getMessage(), e.getClass());

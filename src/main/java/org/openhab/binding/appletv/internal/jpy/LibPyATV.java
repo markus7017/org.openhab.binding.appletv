@@ -15,7 +15,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 import org.apache.commons.lang.StringUtils;
@@ -47,6 +49,7 @@ public class LibPyATV {
     private Path libPath;
     private PyATVProxy pyATV;
     private String jsonDevices = "";
+    Map<String, Object> playStatus = new HashMap<>();
 
     private boolean started = false;
 
@@ -86,7 +89,8 @@ public class LibPyATV {
 
             if (os.contains("mac")) {
                 System.setProperty("jpy.pythonLib",
-                        "/usr/local/Cellar/python/3.6.5/Frameworks/Python.framework/Versions/3.6/lib/libpython3.6.dylib");
+                        // "/usr/local/Cellar/python/3.6.5/Frameworks/Python.framework/Versions/3.6/lib/libpython3.6.dylib");
+                        "/Library/Frameworks/Python.framework/Versions/3.6/lib/libpython3.6.dylib");
                 jpyLib = "lib/jpy/lib.macosx-x86_64-3.6";
                 System.setProperty("jpy.jpyLib", jpyPath + "/jpy.so");
                 System.setProperty("jpy.jdlLib", jpyPath + "/jdl.so");
@@ -208,8 +212,9 @@ public class LibPyATV {
 
             String[] args = new String[20];
             // PyObject res = plugIn.exec("--address 192.168.x.y --login_id 0xXXXXXXXXXXXXXXXX top_menu");
-            int a = 1;
-            args[0] = "--debug";
+            int a = 0;
+            args[a++] = "--debug";
+            args[a++] = "--verbose";
             if (!ipAddress.isEmpty()) {
                 args[a++] = "--address";
                 args[a++] = ipAddress;
@@ -262,6 +267,24 @@ public class LibPyATV {
     public void devicesDiscovered(String json) {
         logger.debug("Discovered devices: {}", json);
         jsonDevices = json;
+    }
+
+    /**
+     * Query device status
+     *
+     * @return
+     */
+    public Map<String, Object> updatePlayStatus(String ipAddress, String loginId) {
+        sendCommands("playing", ipAddress, loginId);
+        return playStatus;
+    }
+
+    public void statusEvent(String prop, String value) {
+        logger.debug("PyATV.Event: {}={}", prop, value);
+        if (playStatus.get(prop) != null) {
+            playStatus.remove(prop);
+        }
+        playStatus.put(prop, value);
     }
 
     public String getLibPath() {

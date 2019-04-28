@@ -26,10 +26,8 @@ def _print_commands(title, api):
         map(lambda x: x[0] + ' - ' + x[1], sorted(cmd_list.items())))
     print('{} commands:\n{}\n'.format(title, commands))
 
-
 class GlobalCommands:
     """Commands not bound to a specific device."""
-
     def __init__(self, args, loop):
         """Initialize a new instance of GlobalCommands."""
         self.args = args
@@ -171,6 +169,7 @@ class PushListener:
     @staticmethod
     def playstatus_update(_, playstatus):
         """Print what is currently playing when it changes."""
+        print('Play Status:')
         print(str(playstatus))
         print(20*'-')
 
@@ -439,22 +438,31 @@ class PyATV:
 			print("Unable to access Java class: "+str(e), flush=True)
 			return 1
 		return 0
-		
+				
 	def exec(self, jargs):
 		"""Start the asyncio event loop and runs the application."""
 		# Helper method so that the coroutine exits cleanly if an exception
 		# happens (which would leave resources dangling)
 		@asyncio.coroutine
 		def _run_application(loop, jargs):
-			print('_run_application()')
-			return (yield from cli_handler(loop, jargs))
+			try:
+				return (yield from cli_handler(loop, jargs))
+			except SystemExit:
+				pass  # sys.exit() was used - do nothing
+			except Exception as e:
+				javaPyATV.info("Exception in _run_application(): "+str(e))
+				traceback.print_exc(file=sys.stderr)
+				return 1
+
 		try:
 			self.args = jargs
 			loop = asyncio.new_event_loop()
 			asyncio.set_event_loop(loop)
 			return loop.run_until_complete(_run_application(loop, jargs))
-		except:
+		except Exception as e:
+			javaPyATV.info("Exception in exec(): "+str(e))
 			return 1
+
 		return 0
 
 	def start_update_listener(self):
@@ -466,3 +474,6 @@ class PyATV:
 		javaPyATV.debug('Stop event listener')
 		self.atv.push_updater.stop()
 		return 0
+
+	def getPyATV():
+		return javaPyATV

@@ -18,6 +18,8 @@ from pyatv.interface import retrieve_commands
 
 import jpy
 
+javaPyATV = None
+
 def _print_commands(title, api):
     cmd_list = retrieve_commands(api)
     commands = ' - ' + '\n - '.join(
@@ -218,9 +220,9 @@ def cli_handler(loop, jargs):
 	                    dest='pairing_guid', default=None)
 
 	ident = parser.add_mutually_exclusive_group()
-	ident.add_argument('-a', '--autodiscover',
-	                   help='automatically find a device',
-	                   action='store_true', dest='autodiscover', default=False)
+#	ident.add_argument('-a', '--autodiscover',
+#	                   help='automatically find a device',
+#	                   action='store_true', dest='autodiscover', default=False)
 	ident.add_argument('--login_id', help='home sharing id or pairing guid',
 	                   dest='login_id', default=None)
 
@@ -241,7 +243,6 @@ def cli_handler(loop, jargs):
 	    loglevel = logging.INFO
 	if args.debug:
 	    loglevel = logging.DEBUG
-
 	logging.basicConfig(level=loglevel,
 	                    format='%(levelname)s: %(message)s')
 	logging.getLogger('requests').setLevel(logging.WARNING)
@@ -257,70 +258,64 @@ def cli_handler(loop, jargs):
 		glob_cmds = GlobalCommands(args, loop)
 		return (yield from _exec_command(
            	glob_cmds, args.command[0], print_result=False))
-	if args.autodiscover:
-		return (yield from _handle_autodiscover(args, loop))
+#	if args.autodiscover:
+#		return (yield from _handle_autodiscover(args, loop))
 	if args.login_id:
 		return (yield from _handle_commands(args, loop))
 
-	logging.error('To autodiscover an Apple TV, add -a')
+#	logging.error('To autodiscover an Apple TV, add -a')
 	return 1
 
 def _print_found_apple_tvs(atvs, outstream=sys.stdout):
-	print('Found Apple TVs:', file=outstream, flush=True)
-	i = 0
-	import codecs
-	try:
-		with codecs.open("/tmp/ohpyatv-devices.json", 'w', 'utf8') as f:
-			f.write('{ "devices": [ ')
-			for apple_tv in atvs:
-				if apple_tv.login_id is None:
-					msg = ' - {0} at {1} (home sharing disabled)'.format(
-						apple_tv.name, apple_tv.address)
-				else:
-					msg = ' - {0} at {1} (login id: {2})'.format(
-						apple_tv.name, apple_tv.address, apple_tv.login_id)
-				print(msg, file=outstream, flush=True)
-				i = i+1
-				if i != 1:
-					f.write(", ")
-				inner = '"name":"{0}", "ipAddress":"{1}", "loginId":"{2}"'.format(apple_tv.name, apple_tv.address, apple_tv.login_id)
-				json = "{ "+inner+" }"
-				f.write(str(json))
-				print(json, flush=True)
+	global javaPyATV
 
-			f.write(" ] }")
-			#f.close()
-		print('B', flush=True)
+	javaPyATV.debug('Discovery completed')
+	jsonDevices = ""
+	i = 0
+	try:
+		for apple_tv in atvs:
+			if apple_tv.login_id is None:
+				msg = ' - {0} at {1} (home sharing disabled)'.format(apple_tv.name, apple_tv.address)
+			else:
+				msg = ' - {0} at {1} (login id: {2})'.format(apple_tv.name, apple_tv.address, apple_tv.login_id)
+			javaPyATV.info(str(msg))
+			i = i+1
+			if i != 1:
+				jsonDevices = jsonDevices+", "
+			inner = '"name":"{0}", "ipAddress":"{1}", "loginId":"{2}"'.format(apple_tv.name, apple_tv.address, apple_tv.login_id)
+			jsonDevices = jsonDevices + "{ "+inner+" }"
+
+		javaPyATV.devicesDiscovered(str('{ "devices": [ '+ jsonDevices  +' ] }'))
 		return 0
 
 	except Exception as e:
-		print("Exception in print_found_apple_tv: "+str(e), flush=True)
+		javaPyATV.info("Exception in print_found_apple_tv: "+str(e))
 		return 1
 
 
-@asyncio.coroutine
-def _handle_autodiscover(args, loop):
-	atvs = yield from pyatv.scan_for_apple_tvs(
-	    loop, timeout=args.scan_timeout, abort_on_found=True)
-
-	if not atvs:
-		logging.error('Could not find any Apple TV on current network')
-		return 1
-
-	if len(atvs) > 1:
-		logging.error('Found more than one Apple TV; '
-		              'specify one using --address and --login_id')
-		_print_found_apple_tvs(atvs, outstream=sys.stderr)
-		return 1
-
-	# Simple hack to re-use existing command handling and respect options
-	apple_tv = atvs[0]
-	args.address = apple_tv.address
-	args.login_id = apple_tv.login_id
-	args.name = apple_tv.name
-	logging.info('Auto-discovered device {0} at {1}'.format(args.name, args.address))
-
-	return (yield from _handle_commands(args, loop))
+#@asyncio.coroutine
+#def _handle_autodiscover(args, loop):
+#	atvs = yield from pyatv.scan_for_apple_tvs(
+#	    loop, timeout=args.scan_timeout, abort_on_found=True)
+#
+#	if not atvs:
+#		logging.error('Could not find any Apple TV on current network')
+#		return 1
+#
+#	if len(atvs) > 1:
+#		logging.error('Found more than one Apple TV; '
+#		              'specify one using --address and --login_id')
+#		_print_found_apple_tvs(atvs, outstream=sys.stderr)
+#		return 1
+#
+#	# Simple hack to re-use existing command handling and respect options
+#	apple_tv = atvs[0]
+#	args.address = apple_tv.address
+#	args.login_id = apple_tv.login_id
+#	args.name = apple_tv.name
+#	logging.info('Auto-discovered device {0} at {1}'.format(args.name, args.address))
+#
+#	return (yield from _handle_commands(args, loop))
 
 def _extract_command_with_args(cmd):
 	"""Parse input command with arguments.
@@ -430,18 +425,19 @@ def _pretty_print(data):
 		print(data)
 
 class PyATV:
-	def check(self):
+	def init(self, lib):
 		#sys.stdout = open('/tmp/ohpyatv-console.log', 'w')
 		#sys.stderr = open('/tmp/ohpyatv-error.log', 'w')
 		print('Hello from PyATV', flush=True)
 
 		try:
-			LibPyATV = jpy.get_type('org.openhab.binding.appletv.internal.jpy.LibPyATV')		
-			LibPyATV.ping()
+			print('Initialize Java access', flush=True)
+			global javaPyATV
+			javaPyATV = lib
+			javaPyATV.debug("Hello from PyATV")
 		except Exception as e:
 			print("Unable to access Java class: "+str(e), flush=True)
 			return 1
-		
 		return 0
 		
 	def exec(self, jargs):
@@ -451,40 +447,22 @@ class PyATV:
 		@asyncio.coroutine
 		def _run_application(loop, jargs):
 			print('_run_application()')
-			#try:
 			return (yield from cli_handler(loop, jargs))
-
-			#except KeyboardInterrupt:
-			#	pass  # User pressed Ctrl+C, just ignore it
-
-			#except SystemExit:
-			#	pass  # sys.exit() was used - do nothing
-
-			#except:  # pylint: disable=bare-except # noqa: E722
-			#	traceback.print_exc(file=sys.stderr)
-			#	sys.stderr.writelines(
-			#		'\n>>> An error occurred, full stack trace above\n')
-
-			#return 1
-
 		try:
 			self.args = jargs
-			#loop = asyncio.get_event_loop()
-			#if loop == None:
 			loop = asyncio.new_event_loop()
 			asyncio.set_event_loop(loop)
 			return loop.run_until_complete(_run_application(loop, jargs))
 		except:
 			return 1
-
 		return 0
 
 	def start_update_listener(self):
-		print('Start event listener')
-		atv.push_updater.start()
+		javaPyATV.debug('Start event listener')
+		self.atv.push_updater.start()
 		return 0
 
 	def stop_update_listener(self):
-		print('Stop event listener')
-		atv.push_updater.stop()
+		javaPyATV.debug('Stop event listener')
+		self.atv.push_updater.stop()
 		return 0

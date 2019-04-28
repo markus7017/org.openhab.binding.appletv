@@ -104,7 +104,7 @@ public class AppleTVDiscoveryService extends AbstractDiscoveryService {
             Gson gson = new Gson();
             ATVDeviceList devList = gson.fromJson(jsonDevices, ATVDeviceList.class);
             for (ATVDevice dev : devList.devices) {
-                logger.info("New device {} discovered: ipAddress={}, loginId={}", dev.name, dev.ipAddress, dev.loginId);
+                logger.info("Device {} discovered: ipAddress={}, loginId={}", dev.name, dev.ipAddress, dev.loginId);
                 Map<String, Object> properties = new HashMap<>();
                 properties.put(PROPERTY_VENDOR, "Apple");
                 properties.put(PROPERTY_IP, dev.ipAddress);

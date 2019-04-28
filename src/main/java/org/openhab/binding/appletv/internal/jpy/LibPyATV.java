@@ -9,11 +9,6 @@
 
 package org.openhab.binding.appletv.internal.jpy;
 
-import static org.openhab.binding.appletv.internal.AppleTVBindingConstants.JPY_DEVICE_FILE;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,7 +33,7 @@ import org.openhab.binding.appletv.internal.AppleTVLogger;
  */
 public class LibPyATV {
     public interface PyATVProxy {
-        PyObject check();
+        PyObject init(LibPyATV lib);
 
         PyObject exec(String[] arg);
 
@@ -51,6 +46,7 @@ public class LibPyATV {
 
     private Path libPath;
     private PyATVProxy pyATV;
+    private String jsonDevices = "";
 
     private boolean started = false;
 
@@ -174,16 +170,38 @@ public class LibPyATV {
             if (pyATV == null) {
                 throw new Exception("Unable to initialize PyATV access");
             }
-            pyATV.check();
+            pyATV.init(this); // pass class instance for callbacks
         } catch (Exception e) {
             logger.error("Unable to start Python (jpy): {} ({})", e.getMessage(), e.getClass());
         }
     }
 
-    public String getLibPath() {
-        return libPath.toString();
+    /**
+     * This function will be called from the PyATV module to display an info message
+     *
+     * @param message
+     */
+    public void info(String message) {
+        logger.info("{}", message);
     }
 
+    /**
+     * This function will be called from the PyATV module to display a debug message
+     *
+     * @param message
+     */
+    public void debug(String message) {
+        logger.debug("{}", message);
+    }
+
+    /**
+     * Send one or more commands to the PyATV module.
+     *
+     * @param commands  command sequence seperated by ' '
+     * @param ipAddress IP address of the Apple-TV
+     * @param loginId   Login ID resulting from device pairing
+     * @return true: successful, false: failed, e.g. exception in the PyATV module
+     */
     public boolean sendCommands(String commands, String ipAddress, String loginId) {
         try {
             logger.info("Sending command {} to ip {}, lid {}", commands, ipAddress, loginId);
@@ -212,19 +230,22 @@ public class LibPyATV {
         }
     }
 
+    /**
+     * Calls the PyATV module to scan for devices.
+     * Once successful the PyATV module will call devicesDiscovered() to pass the resulting device json
+     *
+     * @return Device list in JSON format
+     */
     public String scanDevices() {
         try {
             logger.info("Scan for AppleTV devices");
-            File file = new File(JPY_DEVICE_FILE);
-            file.delete();
 
+            jsonDevices = "";
             String[] args = new String[1];
             args[0] = "scan";
+            // the excec(scan) call will do a callback and fills jsonDevices before returning
             if (pyATV.exec(args).getIntValue() == 0) {
-                BufferedReader reader = new BufferedReader(new FileReader(JPY_DEVICE_FILE));
-                String json = reader.readLine();
-                reader.close();
-                return json;
+                return jsonDevices;
             }
             logger.error("Scanning for Apple-TV devices failed!");
         } catch (Exception e) {
@@ -233,13 +254,18 @@ public class LibPyATV {
         return "";
     }
 
-    public void ping(String ping) {
-        logger.debug("Python ping");
-
-    }
-
+    /**
+     * Callback for PyATV module delivery the device list in JSON format
+     *
+     * @param json
+     */
     public void devicesDiscovered(String json) {
         logger.debug("Discovered devices: {}", json);
+        jsonDevices = json;
+    }
+
+    public String getLibPath() {
+        return libPath.toString();
     }
 
     void dispose() {

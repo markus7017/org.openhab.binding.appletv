@@ -73,11 +73,11 @@ public class AppleTVHandlerFactory extends BaseThingHandlerFactory {
     }
 
     public boolean sendCommands(String commands, String ipAddress, String loginId) {
-        try {
-            return pyATV.sendCommands(commands, ipAddress, loginId);
-        } catch (RuntimeException e) {
-            return false;
-        }
+        return pyATV.sendCommands(commands, ipAddress, loginId);
+    }
+
+    public String scanDevices() {
+        return pyATV.scanDevices();
     }
 
     String getLibPath() {

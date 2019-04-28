@@ -9,6 +9,11 @@
 
 package org.openhab.binding.appletv.internal.jpy;
 
+import static org.openhab.binding.appletv.internal.AppleTVBindingConstants.JPY_DEVICE_FILE;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -203,17 +208,34 @@ public class LibPyATV {
         }
     }
 
-    public boolean scan() {
+    public String scanDevices() {
         try {
             logger.info("Scan for AppleTV devices");
+            File file = new File(JPY_DEVICE_FILE);
+            file.delete();
 
             String[] args = new String[1];
             args[0] = "scan";
-            return (pyATV.exec(args).getIntValue() == 0);
+            if (pyATV.exec(args).getIntValue() == 0) {
+                BufferedReader reader = new BufferedReader(new FileReader(JPY_DEVICE_FILE));
+                String json = reader.readLine();
+                reader.close();
+                return json;
+            }
+            logger.error("Scanning for Apple-TV devices failed!");
         } catch (Exception e) {
             logger.error("Exception on PyATV call: {} ({})", e.getMessage(), e.getClass());
-            return false;
         }
+        return "";
+    }
+
+    public void ping(String ping) {
+        logger.debug("Python ping");
+
+    }
+
+    public void devicesDiscovered(String json) {
+        logger.debug("Discovered devices: {}", json);
     }
 
     void dispose() {

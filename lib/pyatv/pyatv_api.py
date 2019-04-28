@@ -5,6 +5,7 @@ import inspect
 import logging
 import binascii
 import asyncio
+import traceback
 
 import argparse
 from argparse import ArgumentTypeError
@@ -15,6 +16,7 @@ import pyatv.pairing
 from pyatv import (const, dmap, exceptions, interface, tag_definitions)
 from pyatv.interface import retrieve_commands
 
+#import jpy
 
 def _print_commands(title, api):
     cmd_list = retrieve_commands(api)
@@ -189,9 +191,7 @@ def _in_range(lower, upper, allow_none=False):
 
 @asyncio.coroutine
 def cli_handler(loop, jargs):
-	"""Application starts here."""
-	print('cli_handler()')
-	
+	"""Application starts here."""	
 	parser = argparse.ArgumentParser()
 
 	parser.add_argument('command', nargs='+',
@@ -235,37 +235,29 @@ def cli_handler(loop, jargs):
 	debug.add_argument('--debug', help='print debug information',
 	                   action='store_true', dest='debug')
 
-	print('parse_args()')
 	args = parser.parse_args(jargs)
-	print('parse_args() done')
 	loglevel = logging.WARNING
 	if args.verbose:
 	    loglevel = logging.INFO
 	if args.debug:
 	    loglevel = logging.DEBUG
 
-	print('cli_handler() log')
 	logging.basicConfig(level=loglevel,
 	                    format='%(levelname)s: %(message)s')
 	logging.getLogger('requests').setLevel(logging.WARNING)
 
-	print('cli_handler() sanity check')
 	# Sanity checks that not can be done natively by argparse
 	if (args.login_id and not args.address) or \
 	    (not args.login_id and args.address):
 	    parser.error('both --login_id and --address must be given')
 
-	print('retrieve_commands()')
 	cmds = retrieve_commands(GlobalCommands)
-	print('retrieve_commands() done')
 
 	if args.command[0] in cmds:
-		print('exec_command(Global)')
 		glob_cmds = GlobalCommands(args, loop)
 		return (yield from _exec_command(
            	glob_cmds, args.command[0], print_result=False))
 	if args.autodiscover:
-		print('exec_command(autodiscover)')
 		return (yield from _handle_autodiscover(args, loop))
 	if args.login_id:
 		print('handle_command({0})'.format(args.command))
@@ -274,36 +266,40 @@ def cli_handler(loop, jargs):
 		return (yield from _handle_commands(args, loop))
 
 	logging.error('To autodiscover an Apple TV, add -a')
-
 	return 1
 
 def _print_found_apple_tvs(atvs, outstream=sys.stdout):
-	print('Found Apple TVs:', file=outstream)
-	device_list = ""
+	print('Found Apple TVs:', file=outstream, flush=True)
 	i = 0
-	for apple_tv in atvs:
-		if apple_tv.login_id is None:
-			msg = ' - {0} at {1} (home sharing disabled)'.format(
-				apple_tv.name, apple_tv.address)
-		else:
-			msg = ' - {0} at {1} (login id: {2})'.format(
-				apple_tv.name, apple_tv.address, apple_tv.login_id)
-		print(msg, file=outstream)
-		i = i+1
-		if i != 1:
-			device_list =  device_list+", "
-		json = '"name":"{0}", "ip_address":"{1}", "login_id":"{2}"'.format(apple_tv.name, apple_tv.address, apple_tv.login_id)
-		device_list = device_list + "{"+json+"}"
-		#print("json={0}".format(device_list), file=outstream, flush=True)
+	import codecs
+	try:
+		with codecs.open("/tmp/ohpyatv-devices.json", 'w', 'utf8') as f:
+			f.write('{ "devices": [ ')
+			for apple_tv in atvs:
+				if apple_tv.login_id is None:
+					msg = ' - {0} at {1} (home sharing disabled)'.format(
+						apple_tv.name, apple_tv.address)
+				else:
+					msg = ' - {0} at {1} (login id: {2})'.format(
+						apple_tv.name, apple_tv.address, apple_tv.login_id)
+				print(msg, file=outstream, flush=True)
+				i = i+1
+				if i != 1:
+					f.write(", ")
+				inner = '"name":"{0}", "ipAddress":"{1}", "loginId":"{2}"'.format(apple_tv.name, apple_tv.address, apple_tv.login_id)
+				json = "{ "+inner+" }"
+				f.write(str(json))
+				print(json, flush=True)
 
-	device_list = "{ "+device_list+" }"
-	print("device_list={0}".format(device_list), file=outstream, flush=True)
-	f = open("/tmp/ohpyatv-devices.json", "w")
-	f.write('{0}\n'.format(device_list))
-	f.close()
-	
-	print("\nNote: You must use 'pair' with devices "
-	    "that have home sharing disabled", file=outstream)
+			f.write(" ] }")
+			#f.close()
+		print('B', flush=True)
+		return 0
+
+	except Exception as e:
+		print("Exception in print_found_apple_tv: "+str(e), flush=True)
+		return 1
+
 
 @asyncio.coroutine
 def _handle_autodiscover(args, loop):
@@ -325,7 +321,7 @@ def _handle_autodiscover(args, loop):
 	args.address = apple_tv.address
 	args.login_id = apple_tv.login_id
 	args.name = apple_tv.name
-	logging.info('Auto-discovered %s at %s', args.name, args.address)
+	logging.info('Auto-discovered device {0} at {1}'.format(args.name, args.address))
 
 	return (yield from _handle_commands(args, loop))
 
@@ -438,7 +434,7 @@ def _pretty_print(data):
 
 class PyATV:
 	def check(self):
-		sys.stdout = open('/tmp/ohpyatv-console.log', 'w')
+		#sys.stdout = open('/tmp/ohpyatv-console.log', 'w')
 		sys.stderr = open('/tmp/ohpyatv-error.log', 'w')
 		print('Hello from PyATV', flush=True)
 		return 0
@@ -450,22 +446,21 @@ class PyATV:
 		@asyncio.coroutine
 		def _run_application(loop, jargs):
 			print('_run_application()')
-			try:
-				return (yield from cli_handler(loop, jargs))
+			#try:
+			return (yield from cli_handler(loop, jargs))
 
-			except KeyboardInterrupt:
-				pass  # User pressed Ctrl+C, just ignore it
+			#except KeyboardInterrupt:
+			#	pass  # User pressed Ctrl+C, just ignore it
 
 			#except SystemExit:
 			#	pass  # sys.exit() was used - do nothing
 
-			except:  # pylint: disable=bare-except # noqa: E722
-				import traceback
-				traceback.print_exc(file=sys.stderr)
-				sys.stderr.writelines(
-					'\n>>> An error occurred, full stack trace above\n')
+			#except:  # pylint: disable=bare-except # noqa: E722
+			#	traceback.print_exc(file=sys.stderr)
+			#	sys.stderr.writelines(
+			#		'\n>>> An error occurred, full stack trace above\n')
 
-			return 1
+			#return 1
 
 		try:
 			self.args = jargs
@@ -474,8 +469,8 @@ class PyATV:
 			loop = asyncio.new_event_loop()
 			asyncio.set_event_loop(loop)
 			return loop.run_until_complete(_run_application(loop, jargs))
-		except KeyboardInterrupt:
-			pass
+		except:
+			return 1
 
 		return 0
 

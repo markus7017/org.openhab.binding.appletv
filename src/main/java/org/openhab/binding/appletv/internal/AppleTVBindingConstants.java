@@ -29,8 +29,12 @@ public class AppleTVBindingConstants {
 
     // List of all Thing Type UIDs
     public static final ThingTypeUID THING_TYPE_APPLETV = new ThingTypeUID(BINDING_ID, "device");
-    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Collections
-            .singleton(AppleTVBindingConstants.THING_TYPE_APPLETV);
+    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Collections.singleton(THING_TYPE_APPLETV);
+
+    // Thing properties
+    public static final String PROPERTY_ID = "deviceId";
+    public static final String PROPERTY_IP = "ipAddress";
+    public static final String PROPERTY_LOGIN_ID = "loginId";
 
     // List of all Channel ids
     public static final String CHGROUP_CONTROL = "control";
@@ -43,4 +47,6 @@ public class AppleTVBindingConstants {
     public static final String CHANNEL_MEDIA_TYPE = "mediaType";
     public static final String CHANNEL_REPEAT_STATE = "repeatState";
     public static final String CHANNEL_ALBUM = "album";
+
+    public static final String JPY_DEVICE_FILE = "/tmp/ohpyatv-devices.json";
 }

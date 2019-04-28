@@ -11,6 +11,7 @@ Bundle-SymbolicName: org.openhab.binding.appletv;singleton:=true
 Bundle-Vendor: openHAB
 Bundle-Version: 2.5.0.qualifier
 Import-Package: 
+ com.google.gson,
  org.apache.commons.lang,
  org.eclipse.jdt.annotation;resolution:=optional,
  org.eclipse.smarthome.config.core,

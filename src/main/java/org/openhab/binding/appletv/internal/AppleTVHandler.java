@@ -60,8 +60,6 @@ public class AppleTVHandler extends BaseThingHandler {
                 configuration.put("libPath", handlerFactory.getLibPath());
                 this.updateConfiguration(configuration);
                 logger.debug("Configuration updated.");
-
-                sendCommands("top_menu");
                 updateStatus(ThingStatus.ONLINE);
             } catch (Exception e) {
                 logger.error("Call to PyATV failed: {} ({})", e.getMessage(), e.getClass());

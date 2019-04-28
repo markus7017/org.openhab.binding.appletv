@@ -16,7 +16,7 @@ import pyatv.pairing
 from pyatv import (const, dmap, exceptions, interface, tag_definitions)
 from pyatv.interface import retrieve_commands
 
-#import jpy
+import jpy
 
 def _print_commands(title, api):
     cmd_list = retrieve_commands(api)
@@ -36,12 +36,12 @@ class GlobalCommands:
     @asyncio.coroutine
     def commands(self):
         """Print a list with available commands."""
-        _print_commands('Remote control', interface.RemoteControl)
-        _print_commands('Metadata', interface.Metadata)
-        _print_commands('Playing', interface.Playing)
-        _print_commands('AirPlay', interface.AirPlay)
-        _print_commands('Device', DeviceCommands)
-        _print_commands('Global', self.__class__)
+        #_print_commands('Remote control', interface.RemoteControl)
+        #_print_commands('Metadata', interface.Metadata)
+        #_print_commands('Playing', interface.Playing)
+        #_print_commands('AirPlay', interface.AirPlay)
+        #_print_commands('Device', DeviceCommands)
+        #_print_commands('Global', self.__class__)
 
         return 0
 
@@ -127,7 +127,7 @@ class DeviceCommands:
         """Download artwork and save it to artwork.png."""
         artwork = yield from self.atv.metadata.artwork()
         if artwork is not None:
-            with open('artwork.png', 'wb') as file:
+            with open('/tmp/ohpyatv-artwork.png', 'wb') as file:
                 file.write(artwork)
         else:
             print('No artwork is currently available.')
@@ -260,9 +260,6 @@ def cli_handler(loop, jargs):
 	if args.autodiscover:
 		return (yield from _handle_autodiscover(args, loop))
 	if args.login_id:
-		print('handle_command({0})'.format(args.command))
-		print('  ip address={0}'.format(args.address))
-		print('  login_id={0}'.format(args.login_id))
 		return (yield from _handle_commands(args, loop))
 
 	logging.error('To autodiscover an Apple TV, add -a')
@@ -435,8 +432,16 @@ def _pretty_print(data):
 class PyATV:
 	def check(self):
 		#sys.stdout = open('/tmp/ohpyatv-console.log', 'w')
-		sys.stderr = open('/tmp/ohpyatv-error.log', 'w')
+		#sys.stderr = open('/tmp/ohpyatv-error.log', 'w')
 		print('Hello from PyATV', flush=True)
+
+		try:
+			LibPyATV = jpy.get_type('org.openhab.binding.appletv.internal.jpy.LibPyATV')		
+			LibPyATV.ping()
+		except Exception as e:
+			print("Unable to access Java class: "+str(e), flush=True)
+			return 1
+		
 		return 0
 		
 	def exec(self, jargs):

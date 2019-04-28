@@ -54,6 +54,10 @@ public class LibPyATV {
 
     private boolean started = false;
 
+    public LibPyATV() {
+
+    }
+
     public LibPyATV(String currentLibPath) {
 
         try {

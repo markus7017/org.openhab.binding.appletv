@@ -9,7 +9,7 @@ _LOGGER = logging.getLogger(__name__)
 
 # Internal version that works like read_ignore, but also logs
 def _read_unknown(data, start, length):
-    _LOGGER.warning('Unknown data: %s', str(data[start-8:start+length+8]))
+    _LOGGER.debug('Unknown data: %s', str(data[start-8:start+length+8]))
 
 
 # These are the tags that we know about so far

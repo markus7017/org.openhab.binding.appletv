@@ -85,6 +85,9 @@ public class AppleTVDiscoveryService extends AbstractDiscoveryService {
         return SUPPORTED_THING_TYPES_UIDS;
     }
 
+    /**
+     * Start device discovery
+     */
     @Override
     protected void startScan() {
         if (handlerFactory == null) {

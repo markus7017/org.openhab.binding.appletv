@@ -9,16 +9,18 @@
 
 package org.openhab.binding.appletv.internal.jpy;
 
+import static org.openhab.binding.appletv.internal.AppleTVBindingConstants.*;
+
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.StringTokenizer;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
 import org.jpy.PyLib;
@@ -35,21 +37,17 @@ import org.openhab.binding.appletv.internal.AppleTVLogger;
  */
 public class LibPyATV {
     public interface PyATVProxy {
-        PyObject init(LibPyATV lib);
 
-        PyObject exec(String[] arg);
+        PyObject init(AppleTVHandler handler);
 
-        PyObject start_update_listener();
-
-        PyObject stop_update_listener();
+        PyObject exec(Object handler, String[] arg);
     }
 
     private final AppleTVLogger logger = new AppleTVLogger(AppleTVHandlerFactory.class, "PyATV");
 
     private Path libPath;
     private PyATVProxy pyATV;
-    private String jsonDevices = "";
-    Map<String, Object> playStatus = new HashMap<>();
+    private Semaphore accessMutex = new Semaphore(1);
 
     private boolean started = false;
 
@@ -57,6 +55,7 @@ public class LibPyATV {
 
     }
 
+    @SuppressWarnings("null")
     public LibPyATV(String currentLibPath) {
 
         try {
@@ -174,28 +173,24 @@ public class LibPyATV {
             if (pyATV == null) {
                 throw new Exception("Unable to initialize PyATV access");
             }
-            pyATV.init(this); // pass class instance for callbacks
         } catch (Exception e) {
             logger.error("Unable to start Python (jpy): {} ({})", e.getMessage(), e.getClass());
         }
     }
 
-    /**
-     * This function will be called from the PyATV module to display an info message
-     *
-     * @param message
-     */
-    public void info(String message) {
-        logger.info("{}", message);
-    }
+    public void init(AppleTVHandler thingHandler) {
+        boolean acquired = false;
+        try {
+            acquired = accessMutex.tryAcquire(PYATV_ACCESS_TIMEOUT, TimeUnit.SECONDS);
+            pyATV.init(thingHandler);
 
-    /**
-     * This function will be called from the PyATV module to display a debug message
-     *
-     * @param message
-     */
-    public void debug(String message) {
-        logger.debug("{}", message);
+        } catch (RuntimeException | InterruptedException e) {
+            logger.error("Unable to init PyATV: {} ({})", e.getMessage(), e.getClass());
+        } finally {
+            if (acquired) {
+                accessMutex.release();
+            }
+        }
     }
 
     /**
@@ -206,15 +201,17 @@ public class LibPyATV {
      * @param loginId   Login ID resulting from device pairing
      * @return true: successful, false: failed, e.g. exception in the PyATV module
      */
-    public boolean sendCommands(String commands, String ipAddress, String loginId) {
+    public boolean sendCommands(String commands, Object handler, String ipAddress, String loginId) {
+
+        boolean acquired = false;
         try {
             logger.info("Sending command {} to ip {}, lid {}", commands, ipAddress, loginId);
 
             String[] args = new String[20];
             // PyObject res = plugIn.exec("--address 192.168.x.y --login_id 0xXXXXXXXXXXXXXXXX top_menu");
             int a = 0;
-            args[a++] = "--debug";
-            args[a++] = "--verbose";
+            // args[a++] = "--debug";
+            // args[a++] = "--verbose";
             if (!ipAddress.isEmpty()) {
                 args[a++] = "--address";
                 args[a++] = ipAddress;
@@ -228,10 +225,16 @@ public class LibPyATV {
             while (tokenizer.hasMoreElements()) {
                 args[a++] = tokenizer.nextToken();
             }
-            return pyATV.exec(args).getIntValue() == 1;
+
+            acquired = accessMutex.tryAcquire(PYATV_ACCESS_TIMEOUT, TimeUnit.SECONDS);
+            return pyATV.exec(handler, args).getIntValue() == 0;
         } catch (Exception e) {
             logger.error("Exception on PyATV call: {} ({})", e.getMessage(), e.getClass());
             return false;
+        } finally {
+            if (acquired) {
+                accessMutex.release();
+            }
         }
     }
 
@@ -241,50 +244,32 @@ public class LibPyATV {
      *
      * @return Device list in JSON format
      */
-    public String scanDevices() {
+    public String scanDevices(AppleTVHandlerFactory handlerFactory) {
+        boolean acquired = false;
         try {
             logger.info("Scan for AppleTV devices");
-
-            jsonDevices = "";
-            String[] args = new String[1];
-            args[0] = "scan";
-            // the excec(scan) call will do a callback and fills jsonDevices before returning
-            if (pyATV.exec(args).getIntValue() == 0) {
-                return jsonDevices;
+            /*
+             * String[] args = new String[10];
+             * int a = 0;
+             * args[a++] = "--debug";
+             * args[a++] = "scan";
+             * // the excec(scan) call will do a callback and fills jsonDevices before returning
+             * acquired = accessMutex.tryAcquire(PYATV_ACCESS_TIMEOUT, TimeUnit.SECONDS);
+             * if (pyATV.exec(handlerFactory, args).getIntValue() == 0) {
+             * return "";
+             * }
+             */
+            if (!sendCommands(COMMAND_SCAN, handlerFactory, "", "")) {
+                logger.error("Scanning for Apple-TV devices failed!");
             }
-            logger.error("Scanning for Apple-TV devices failed!");
         } catch (Exception e) {
-            logger.error("Exception on PyATV call: {} ({})", e.getMessage(), e.getClass());
+            logger.error("Exception device scan: {} ({})", e.getMessage(), e.getClass());
+        } finally {
+            if (acquired) {
+                accessMutex.release();
+            }
         }
         return "";
-    }
-
-    /**
-     * Callback for PyATV module delivery the device list in JSON format
-     *
-     * @param json
-     */
-    public void devicesDiscovered(String json) {
-        logger.debug("Discovered devices: {}", json);
-        jsonDevices = json;
-    }
-
-    /**
-     * Query device status
-     *
-     * @return
-     */
-    public Map<String, Object> updatePlayStatus(String ipAddress, String loginId) {
-        sendCommands("playing", ipAddress, loginId);
-        return playStatus;
-    }
-
-    public void statusEvent(String prop, String value) {
-        logger.debug("PyATV.Event: {}={}", prop, value);
-        if (playStatus.get(prop) != null) {
-            playStatus.remove(prop);
-        }
-        playStatus.put(prop, value);
     }
 
     public String getLibPath() {

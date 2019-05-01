@@ -18,7 +18,7 @@ from pyatv.interface import retrieve_commands
 
 import jpy
 
-javaPyATV = None
+javaHandler = None
 
 def _print_commands(title, api):
     cmd_list = retrieve_commands(api)
@@ -83,17 +83,20 @@ class GlobalCommands:
     @asyncio.coroutine
     def pair(self):
         """Pair pyatv as a remote control with an Apple TV."""
+        global javaHandler
         handler = pyatv.pair_with_apple_tv(
             self.loop, self.args.pin_code, self.args.remote_name,
             pairing_guid=self.args.pairing_guid)
         if self.args.pin_code is None:
-            print('Use any pin to pair with "{}" (press ENTER to stop)'.format(
-                self.args.remote_name))
+            #print('Use any pin to pair with "{}" (press ENTER to stop)'.format(
+            #    self.args.remote_name))
+            javaHandler.info("ERROR: PIN missing!")
+            raise AuthenticationError('PIN missing!')
         else:
             print('Use pin {} to pair with "{}" (press ENTER to stop)'.format(
                 self.args.pin_code, self.args.remote_name))
-        print('Using pairing guid: 0x' + handler.pairing_guid)
-        print('Note: If remote does not show up, try rebooting your Apple TV')
+        javaHandler.info('Using pairing guid: 0x' + handler.pairing_guid)
+        javaHandler.info('Note: If remote does not show up, try rebooting your Apple TV')
 
         yield from handler.start(Zeroconf())
         yield from self.loop.run_in_executor(None, sys.stdin.readline)
@@ -101,66 +104,76 @@ class GlobalCommands:
 
         # Give some feedback to the user
         if handler.has_paired:
-            print('Pairing seems to have succeeded, yey!')
-            print('You may now use this login id: 0x{}'.format(
+            javaHandler.info('Pairing seems to have succeeded, yey!')
+            javaHandler.info('Login id from paring: 0x{}'.format(
                 handler.pairing_guid))
+            javaHandler.statusEvent("login_id", handler.pairing_guid())
         else:
-            print('No response from Apple TV!')
+            javaHandler.info('ERROR: Timeout on pairing!')
+            raise AuthenticationError('Timeout on pairing!')
             return 1
 
         return 0
 
 
 class DeviceCommands:
-    """Additional commands available for a device.
+	"""Additional commands available for a device.
 
-    These commands are not part of the API but are provided by atvremote.
-    """
+	These commands are not part of the API but are provided by atvremote.
+	"""
 
-    def __init__(self, atv, loop):
-        """Initialize a new instance of DeviceCommands."""
-        self.atv = atv
-        self.loop = loop
+	def __init__(self, atv, loop):
+		"""Initialize a new instance of DeviceCommands."""
+		self.atv = atv
+		self.loop = loop
 
-    @asyncio.coroutine
-    def artwork_save(self):
-        """Download artwork and save it to artwork.png."""
-        artwork = yield from self.atv.metadata.artwork()
-        if artwork is not None:
-            with open('/tmp/ohpyatv-artwork.png', 'wb') as file:
-                file.write(artwork)
-        else:
-            print('No artwork is currently available.')
-            return 1
-        return 0
+	@asyncio.coroutine
+	def artwork_save(self):
+		"""Download artwork and save it to artwork.png."""
+		global javaHandler
+		artwork = yield from self.atv.metadata.artwork()
+		if artwork is not None:
+			fname = '/tmp/ohpyatv-artwork.png'
+			javaHandler.info('Saving artwork to {0}'.format(fname))
+			with open(fname, 'wb') as file:
+				file.write(artwork)
+		else:
+			javaHandler.info('No artwork is currently available.')
+			return 1
+		return 0
 
-    @asyncio.coroutine
-    def push_updates(self):
-        """Listen for push updates."""
-        print('Press ENTER to stop')
+	@asyncio.coroutine
+	def push_updates(self):
+		"""Listen for push updates."""
+		#print('Press ENTER to stop')
+		#self.atv.push_updater.start()
+		#yield from self.loop.run_in_executor(None, sys.stdin.readline)
+		#self.atv.push_updater.stop()
+		#return 0
+		return 1
 
-        self.atv.push_updater.start()
-        yield from self.loop.run_in_executor(None, sys.stdin.readline)
-        self.atv.push_updater.stop()
-        return 0
+	@asyncio.coroutine
+	def auth(self):
+		"""Perform AirPlay device authentication."""
+		global javaHandler
+		credentials = yield from self.atv.airplay.generate_credentials()
+		yield from self.atv.airplay.load_credentials(credentials)
 
-    @asyncio.coroutine
-    def auth(self):
-        """Perform AirPlay device authentication."""
-        credentials = yield from self.atv.airplay.generate_credentials()
-        yield from self.atv.airplay.load_credentials(credentials)
+		try:
+			yield from self.atv.airplay.start_authentication()
+			pin = self.args.pin
+			if pin is None:
+				#pin = input('Enter PIN on screen: ')
+				javaHandler.info('WARNING: Unable to authenticate, PIN missing!')
+				raise AuthenticationError('PIN missing!')
+			yield from self.atv.airplay.finish_authentication(pin)
+			javaHandler.info('Credentials from authentication {0}'.format(credentials))
+			javaHandler.statusEvent("credentials", credentials)
+			return 0
 
-        try:
-            yield from self.atv.airplay.start_authentication()
-            pin = input('Enter PIN on screen: ')
-            yield from self.atv.airplay.finish_authentication(pin)
-            print('You may now use these credentials:')
-            print(credentials)
-            return 0
-
-        except exceptions.DeviceAuthenticationError:
-            logging.exception('Failed to authenticate - invalid PIN?')
-            return 1
+		except exceptions.DeviceAuthenticationError:
+			logging.exception('Failed to authenticate - no/invalid PIN?')
+			return 1
 
 
 class PushListener:
@@ -266,9 +279,8 @@ def cli_handler(loop, jargs):
 	return 1
 
 def _print_found_apple_tvs(atvs, outstream=sys.stdout):
-	global javaPyATV
-
-	javaPyATV.debug('Discovery completed')
+	global javaHandler
+	javaHandler.debug('Discovery completed')
 	jsonDevices = ""
 	i = 0
 	try:
@@ -277,18 +289,18 @@ def _print_found_apple_tvs(atvs, outstream=sys.stdout):
 				msg = ' - {0} at {1} (home sharing disabled)'.format(apple_tv.name, apple_tv.address)
 			else:
 				msg = ' - {0} at {1} (login id: {2})'.format(apple_tv.name, apple_tv.address, apple_tv.login_id)
-			javaPyATV.info(str(msg))
+			javaHandler.info(str(msg))
 			i = i+1
 			if i != 1:
 				jsonDevices = jsonDevices+", "
 			inner = '"name":"{0}", "ipAddress":"{1}", "loginId":"{2}"'.format(apple_tv.name, apple_tv.address, apple_tv.login_id)
 			jsonDevices = jsonDevices + "{ "+inner+" }"
 
-		javaPyATV.devicesDiscovered(str('{ "devices": [ '+ jsonDevices  +' ] }'))
+		javaHandler.devicesDiscovered(str('{ "devices": [ '+ jsonDevices  +' ] }'))
 		return 0
 
 	except Exception as e:
-		javaPyATV.info("Exception in print_found_apple_tv: "+str(e))
+		javaHandler.info("Exception in print_found_apple_tv: "+str(e))
 		return 1
 
 
@@ -324,6 +336,8 @@ def _extract_command_with_args(cmd):
 	all the additional arguments are passed as arguments to the target
 	method.
 	"""
+	if cmd is None:
+		print('_extract_command_with_args: cmd is None!')
 	equal_sign = cmd.find('=')
 	if equal_sign == -1:
 		return cmd, []
@@ -345,6 +359,9 @@ def _handle_commands(args, loop):
 			yield from atv.airplay.load_credentials(args.airplay_credentials)
 
 		for cmd in args.command:
+			if cmd is None:
+				break
+			print('process cmd "{0}"'.format(str(cmd)))
 			ret = yield from _handle_device_command(args, cmd, atv, loop)
 			if ret != 0:
 				return ret
@@ -355,7 +372,7 @@ def _handle_commands(args, loop):
 
 # pylint: disable=too-many-return-statements
 @asyncio.coroutine
-def _handle_device_command(args, cmd, atv, loop):
+def _handle_device_command(args, cmdline, atv, loop):
 	# TODO: Add these to array and use a loop
 	device = retrieve_commands(DeviceCommands)
 	ctrl = retrieve_commands(interface.RemoteControl)
@@ -364,7 +381,7 @@ def _handle_device_command(args, cmd, atv, loop):
 	airplay = retrieve_commands(interface.AirPlay)
 
 	# Parse input command and argument from user
-	cmd, cmd_args = _extract_command_with_args(cmd)
+	cmd, cmd_args = _extract_command_with_args(cmdline)
 	if cmd in device:
 		return (yield from _exec_command(
 			DeviceCommands(atv, loop), cmd, False, *cmd_args))
@@ -391,6 +408,7 @@ def _handle_device_command(args, cmd, atv, loop):
 
 @asyncio.coroutine
 def _exec_command(obj, command, print_result, *args):
+	global javaHandler
 	try:
 		# If the command to execute is a @property, the value returned by that
 		# property will be stored in tmp. Otherwise it's a coroutine and we
@@ -408,72 +426,69 @@ def _exec_command(obj, command, print_result, *args):
 			return 0
 		return value
 	except NotImplementedError:
-		logging.exception("Command '%s' is not supported by device", command)
+		javaHandler.info("Command '%s' is not supported by device", command)
 	except exceptions.AuthenticationError as ex:
-		logging.exception('Authentication error: %s', str(ex))
+		javaHandler.info('Authentication error: %s', str(ex))
+	except Exception as e:
+		javaHandler.info("Exception in _exec_command(): "+str(e))
+		traceback.print_exc(file=sys.stderr)
+		return 1
 	return 1
 
 def _pretty_print(data):
-	if data is None:
-		return
-	if isinstance(data, bytes):
-		print(binascii.hexlify(data))
-	elif isinstance(data, list):
-		print(dmap.pprint(data, tag_definitions.lookup_tag))
-	else:
-		print(data)
+	global javaHandler
+	try:
+		if data is None:
+			return
+		if isinstance(data, bytes):
+			print(binascii.hexlify(data))
+		elif isinstance(data, list):
+			print(dmap.pprint(data, tag_definitions.lookup_tag))
+		else:
+			print(data)
+	except Exception as e:
+		javaHandler.debug("Exception in _pretty_print(): "+str(e))
+		traceback.print_exc(file=sys.stderr)
 
 class PyATV:
-	def init(self, lib):
+	def init(self, handler):
 		#sys.stdout = open('/tmp/ohpyatv-console.log', 'w')
 		#sys.stderr = open('/tmp/ohpyatv-error.log', 'w')
-		print('Hello from PyATV', flush=True)
-
+		global javaHandler
 		try:
 			print('Initialize Java access', flush=True)
-			global javaPyATV
-			javaPyATV = lib
-			javaPyATV.debug("Hello from PyATV")
+			javaHandler = handler
+			javaHandler.info('%(prog)s {0}'.format(const.__version__))
 		except Exception as e:
 			print("Unable to access Java class: "+str(e), flush=True)
 			return 1
-		return 0
-				
-	def exec(self, jargs):
+		return 0				
+
+	def exec(self, handler, jargs):
 		"""Start the asyncio event loop and runs the application."""
 		# Helper method so that the coroutine exits cleanly if an exception
 		# happens (which would leave resources dangling)
 		@asyncio.coroutine
 		def _run_application(loop, jargs):
+			global javaHandler
 			try:
 				return (yield from cli_handler(loop, jargs))
 			except SystemExit:
 				pass  # sys.exit() was used - do nothing
 			except Exception as e:
-				javaPyATV.info("Exception in _run_application(): "+str(e))
+				javaHandler.info("Exception in _run_application(): "+str(e))
 				traceback.print_exc(file=sys.stderr)
 				return 1
 
 		try:
+			global javaHandler
+			javaHandler = handler
 			self.args = jargs
 			loop = asyncio.new_event_loop()
 			asyncio.set_event_loop(loop)
 			return loop.run_until_complete(_run_application(loop, jargs))
 		except Exception as e:
-			javaPyATV.info("Exception in exec(): "+str(e))
+			javaHandler.info("Exception in exec(): "+str(e))
 			return 1
 
 		return 0
-
-	def start_update_listener(self):
-		javaPyATV.debug('Start event listener')
-		self.atv.push_updater.start()
-		return 0
-
-	def stop_update_listener(self):
-		javaPyATV.debug('Stop event listener')
-		self.atv.push_updater.stop()
-		return 0
-
-	def getPyATV():
-		return javaPyATV

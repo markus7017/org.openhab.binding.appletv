@@ -38,6 +38,7 @@ import org.osgi.service.component.annotations.Component;
 public class AppleTVHandlerFactory extends BaseThingHandlerFactory {
     private final AppleTVLogger logger = new AppleTVLogger(AppleTVHandlerFactory.class, "Factory");
     private @Nullable LibPyATV pyATV = null;
+    private String jsonDevices = "";
 
     /**
      * Activate the bundle: save properties
@@ -72,19 +73,49 @@ public class AppleTVHandlerFactory extends BaseThingHandlerFactory {
         return null;
     }
 
-    public boolean sendCommands(String commands, String ipAddress, String loginId) {
-        return pyATV.sendCommands(commands, ipAddress, loginId);
+    @SuppressWarnings("null")
+    public void initPyATV(AppleTVHandler thingHandler) throws AppleTVException {
+        pyATV.init(thingHandler);
     }
 
+    @SuppressWarnings("null")
+    public boolean sendCommands(String commands, AppleTVHandler handler, String ipAddress, String loginId) {
+        return pyATV.sendCommands(commands, handler, ipAddress, loginId);
+    }
+
+    @SuppressWarnings("null")
     public String scanDevices() {
-        return pyATV.scanDevices();
+        try {
+            jsonDevices = "";
+            pyATV.scanDevices(this);
+            return jsonDevices;
+        } catch (Exception e) {
+            logger.info("Device scan failed!");
+        }
+        return "";
     }
 
-    public Map<String, Object> updatePlayStatus(String ipAddress, String loginId) {
-        return pyATV.updatePlayStatus(ipAddress, loginId);
-    }
-
+    @SuppressWarnings("null")
     String getLibPath() {
         return pyATV.getLibPath();
+
+    }
+
+    /**
+     * Callback for PyATV module delivery the device list in JSON format
+     *
+     * @param json
+     */
+    public void devicesDiscovered(String json) {
+        logger.debug("Discovered devices: {}", json);
+        jsonDevices = json;
+    }
+
+    public void info(String message) {
+        logger.info("{}", message);
+    }
+
+    public void debug(String message) {
+        logger.debug("{}", message);
     }
 }

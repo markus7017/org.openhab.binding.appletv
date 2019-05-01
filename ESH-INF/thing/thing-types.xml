@@ -15,9 +15,6 @@
             <channel-group id="playStatus" typeId="playStatus">
                 <label>Play Status</label>
             </channel-group>
-            <channel-group id="mediaInformation" typeId="mediaInformation">
-                <label>Play Information</label>
-            </channel-group>
         </channel-groups>
 
 
@@ -50,7 +47,6 @@
        <description>Control function for your Media Receiver</description>
        <channels>
             <channel id="remoteKey" typeId="remoteKey" />
-            <channel id="keysSequence" typeId="keysSequence" />
        </channels>
    </channel-group-type>
    <channel-group-type id="playStatus">
@@ -59,14 +55,15 @@
        <channels>
             <channel id="mediaType" typeId="mediaType" />
             <channel id="playMode" typeId="playMode" />
-            <channel id="repeatState" typeId="repeatState" />
-       </channels>
-   </channel-group-type>
-    <channel-group-type id="mediaInformation">
-       <label>Media Informationl</label>
-       <description>Details on the media currently planing</description>
-       <channels>
+            <channel id="title" typeId="title" />
+            <channel id="artist" typeId="artist" />
             <channel id="album" typeId="album" />
+            <channel id="genre" typeId="genre" />
+            <channel id="artworkUrl" typeId="artworkUrl" />
+            <channel id="position" typeId="position" />
+            <channel id="totalTime" typeId="totalTime" />
+            <channel id="repeat" typeId="repeat" />
+            <channel id="shuffle" typeId="shuffle" />
        </channels>
    </channel-group-type>
 
@@ -84,34 +81,28 @@
                 <option value="left">Left</option>
                 <option value="right">Right</option>
                 <option value="select">Select</option>
+                <option value="pause">Pause</option>
                 <option value="play">Play</option>
                 <option value="stop">Stop</option>
-                <option value="set_shuffle">Shuffle</option>
                 <option value="next">Next</option>
                 <option value="previous">Previous</option>
-                <option value="set_repeat">Repeat</option>
-                <option value="set_position">Set position</option>
             </options>
         </state>
 	</channel-type>
-    <channel-type id="keysSequence">
-        <item-type>String</item-type>
-        <label>Key Sequence</label>
-        <description>Send multiple remote keys to control your Apple-TV</description>
-    </channel-type>
+
     <channel-type id="playMode">
         <item-type>String</item-type>
-        <label>Remote Key</label>
-        <description>Send remote keys to control your Apple-TV</description>
+        <label>Play Mode</label>
+        <description>Status of the media player</description>
         <state readOnly="true">
             <options>
-                <option value="IDLE">Idle</option>
-                <option value="NO_MEDIA">No Media</option>
-                <option value="LOADING">Loading</option>
-                <option value="PAUSED">Paused</option>
-                <option value="PLAYING">Playing</option>
-                <option value="FAST_FORWARD">Fast Forward</option>
-                <option value="FAST_REWIND">Fast Rewind</option>
+                <option value="Idle">Idle</option>
+                <option value="No Media">No Media</option>
+                <option value="Loading">Loading</option>
+                <option value="Paused">Paused</option>
+                <option value="Playing">Playing</option>
+                <option value="Fast forward">Fast Forward</option>
+                <option value="Fast backward">Fast Rewind</option>
             </options>
         </state>
     </channel-type>
@@ -121,30 +112,81 @@
         <description>Type of media currently playing</description>
         <state readOnly="true">
             <options>
-                <option value="UNKNOWN">Unknown</option>
-                <option value="VIDEO">Video</option>
-                <option value="MUSIC">Music</option>
-                <option value="TVSHOW">TV Show</option>
+                <option value="Unknown">Unknown</option>
+                <option value="Video">Video</option>
+                <option value="Music">Music</option>
+                <option value="TV">TV Show</option>
             </options>
         </state>
     </channel-type>
-    <channel-type id="repeatState">
+    <channel-type id="repeat">
         <item-type>String</item-type>
         <label>Repeat State</label>
-        <description>Indicate if tracks are shuffling</description>
-        <state readOnly="true">
+        <description>Indicate if tracks are repeating</description>
+        <state>
             <options>
-                <option value="OFF">UNKNOWNu</option>
-                <option value="CURRENT_TRACK">Current Track</option>
-                <option value="ALL_TRACKS">All Tracks</option>
+                <option value="Off">No</option>
+                <option value="Track">Current Track</option>
+                <option value="All">All Tracks</option>
+            </options>
+        </state>
+    </channel-type>
+    <channel-type id="shuffle">
+        <item-type>String</item-type>
+        <label>Shuffle State</label>
+        <description>Indicate if tracks are shuffling</description>
+        <state>
+            <options>
+                <option value="True">Yes</option>
+                <option value="False">No</option>
             </options>
         </state>
     </channel-type>
 
     <channel-type id="album">
         <item-type>String</item-type>
-        <label>Album Title</label>
+        <label>Album</label>
         <description>Album currently plaing</description>
+        <state readOnly="true">
+        </state>
+    </channel-type>
+    <channel-type id="title">
+        <item-type>String</item-type>
+        <label>Title</label>
+        <description>Title currently plaing</description>
+        <state readOnly="true">
+        </state>
+    </channel-type>
+    <channel-type id="artist">
+        <item-type>String</item-type>
+        <label>Artist</label>
+        <description>Artist of the media</description>
+        <state readOnly="true">
+        </state>
+    </channel-type>
+   <channel-type id="genre">
+        <item-type>String</item-type>
+        <label>Genre</label>
+        <description>Genre of the media</description>
+        <state readOnly="true">
+        </state>
+    </channel-type>
+   <channel-type id="artworkUrl">
+        <item-type>String</item-type>
+        <label>ArtworkURL</label>
+        <description>URL to download the cover</description>
+        <state readOnly="true">
+        </state>
+    </channel-type>
+   <channel-type id="position">
+        <item-type>String</item-type>
+        <label>Position</label>
+        <description>Play position in the media</description>
+    </channel-type>
+   <channel-type id="totalTime">
+        <item-type>String</item-type>
+        <label>Total Duration</label>
+        <description>Total duration of the media</description>
         <state readOnly="true">
         </state>
     </channel-type>

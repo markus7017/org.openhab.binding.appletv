@@ -201,16 +201,19 @@ class RemoteControlInternal(RemoteControl):
 
 	def set_position(self, pos):
 		"""Seek in the current playing media."""
+		print('set position to {}'.format(pos))
 		time_in_ms = int(pos)*1000
 		return self.apple_tv.set_property('dacp.playingtime', time_in_ms)
 
 	def set_shuffle(self, is_on):
 		"""Change shuffle mode to on or off."""
+		print('set shuffle to {}'.format(is_on))
 		state = 1 if is_on else 0
 		return self.apple_tv.set_property('dacp.shufflestate', state)
 
 	def set_repeat(self, repeat_mode):
 		"""Change repeat mode."""
+		print('set repeat to {0}'.format(repeat_mode))
 		return self.apple_tv.set_property('dacp.repeatstate', repeat_mode)
 
 
@@ -226,96 +229,77 @@ class PlayingInternal(Playing):
 	def media_type(self):
 		"""Type of media is currently playing, e.g. video, music."""
 		state = dmap.first(self.playstatus, 'cmst', 'caps')
+		print('midia_type state={0}'.format(state))
 		if not state:
-			type = const.MEDIA_TYPE_UNKNOWN
-			pyatv_api.javaPyATV.statusEvent("media_type", str(type))
-			return type
+			return const.MEDIA_TYPE_NONE
 
 		mediakind = dmap.first(self.playstatus, 'cmst', 'cmmk')
+		print('mediakind={0}'.format(mediakind))
+		if mediakind == const.MEDIA_TYPE_UNKNOWN:
+			# Fallback: if artist or album exists we assume music (not present
+			# for video)
+			print('artist={0}, album{1}'.format(self.artist.strip("\0"), self.album.strip("\0")))
+			if self.artist or self.album:
+				print('media_type=Music')
+				return const.MEDIA_TYPE_MUSIC
+
+			print('media_type=Video')
+			return const.MEDIA_TYPE_VIDEO
+
 		if mediakind is not None:
-			type = convert.media_kind(mediakind)
-			pyatv_api.javaPyATV.statusEvent("media_kind", str(type))
-			return type
+			return convert.media_kind(mediakind)
+		
+		return const.MEDIA_TYPE_UNKNOWN
 
-		# Fallback: if artist or album exists we assume music (not present
-		# for video)
-		if self.artist or self.album:
-			type = const.MEDIA_TYPE_MUSIC
-			pyatv_api.javaPyATV.statusEvent("media_type", str(type))
-			return type
-
-		type = const.MEDIA_TYPE_VIDEO
-		pyatv_api.javaPyATV.statusEvent("media_type", str(type))
-		return type
 
 	@property
 	def play_state(self):
 		"""Play state, e.g. playing or paused."""
-		state = dmap.first(self.playstatus, 'cmst', 'caps')
-		pyatv_api.javaPyATV.statusEvent("play_state", str(state))
-		return convert.playstate(state)
+		return dmap.first(self.playstatus, 'cmst', 'caps')
 
 	@property
 	def title(self):
 		"""Title of the current media, e.g. movie or song name."""
-		value = dmap.first(self.playstatus, 'cmst', 'cann')
-		pyatv_api.javaPyATV.statusEvent("title", str(value))
-		return value
+		return dmap.first(self.playstatus, 'cmst', 'cann')
 
 	@property
 	def artist(self):
 		"""Arist of the currently playing song."""
-		value = dmap.first(self.playstatus, 'cmst', 'cana')
-		pyatv_api.javaPyATV.statusEvent("artist", str(value))
-		return value
+		return dmap.first(self.playstatus, 'cmst', 'cana')
 
 	@property
 	def album(self):
 		"""Album of the currently playing song."""
-		value = dmap.first(self.playstatus, 'cmst', 'canl')
-		pyatv_api.javaPyATV.statusEvent("album", str(value))
-		return value
+		return dmap.first(self.playstatus, 'cmst', 'canl')
 
 	@property
 	def genre(self):
 		"""Genre of the currently playing song."""
-		value = dmap.first(self.playstatus, 'cmst', 'canl')
-		pyatv_api.javaPyATV.statusEvent("genre", str(value))
-		return value
+		return dmap.first(self.playstatus, 'cmst', 'cang')
 
 	@property
 	def total_time(self):
 		"""Total play time in seconds."""
-		value = self._get_time_in_seconds('cast')
-		pyatv_api.javaPyATV.statusEvent("total_time", str(value))
-		return value
-		
+		return self._get_time_in_seconds('cast')
 
 	@property
 	def position(self):
 		"""Position in the playing media (seconds)."""
-		value = self._get_time_in_seconds('cant')
-		pyatv_api.javaPyATV.statusEvent("position", str(value))
-		return value
+		return self.total_time - self._get_time_in_seconds('cant')
 	  
 	@property
 	def shuffle(self):
 		"""If shuffle is enabled or not."""
-		value = bool(dmap.first(self.playstatus, 'cmst', 'cash'))
-		pyatv_api.javaPyATV.statusEvent("shuffle", str(value))
-		return value
+		return bool(dmap.first(self.playstatus, 'cmst', 'cash'))
 
 	@property
 	def repeat(self):
 		"""Repeat mode."""
-		value = dmap.first(self.playstatus, 'cmst', 'carp')
-		pyatv_api.javaPyATV.statusEvent("repeat", str(value))
-		return value
+		return dmap.first(self.playstatus, 'cmst', 'carp')
 
 	def _get_time_in_seconds(self, tag):
 		time = dmap.first(self.playstatus, 'cmst', tag)
 		return convert.ms_to_s(time)
-
 
 class MetadataInternal(Metadata):
 	"""Implementation of API for retrieving metadata from an Apple TV."""
@@ -342,7 +326,7 @@ class MetadataInternal(Metadata):
 	def artwork_url(self):
 		"""Return artwork URL for what is currently playing."""
 		url = self.apple_tv.artwork_url()
-		pyatv_api.javaPyATV.updateStatusString("artwork_url", url)
+		pyatv_api.javaHandler.statusEvent("artwork_url", url)
 		return url
 
 	@asyncio.coroutine
@@ -350,7 +334,6 @@ class MetadataInternal(Metadata):
 		"""Return current device state."""
 		print('playing called')
 		playstatus = yield from self.apple_tv.playstatus()
-		print('playstatus={0}'.format(str(playstatus)))
 		return PlayingInternal(playstatus)
 
 

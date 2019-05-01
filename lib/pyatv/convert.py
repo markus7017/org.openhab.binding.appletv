@@ -5,11 +5,14 @@ from pyatv import (const, exceptions)
 
 def media_kind(kind):
     """Convert iTunes media kind to API representation."""
+    print('Media type={0}'.format(str(kind)))
+    if kind in [0]:
+        return const.MEDIA_TYPE_NONE
     if kind in [1]:
         return const.MEDIA_TYPE_UNKNOWN
-    if kind in [3, 7, 11, 12, 13, 18, 32]:
+    if kind in [2, 7, 11, 12, 13, 18, 32]:
         return const.MEDIA_TYPE_VIDEO
-    if kind in [2, 4, 10, 14, 17, 21, 36]:
+    if kind in [3, 4, 10, 14, 17, 21, 36]:
         return const.MEDIA_TYPE_MUSIC
     if kind in [8, 64]:
         return const.MEDIA_TYPE_TV
@@ -54,8 +57,10 @@ def playstate(state):
 # pylint: disable=too-many-return-statements
 def playstate_str(state):
     """Convert internal API playstate to string."""
+    if state is None:
+        return 'Idle'
     if state == const.PLAY_STATE_NO_MEDIA:
-        return 'No media'
+        return 'No Media'
     if state == const.PLAY_STATE_IDLE:
         return 'Idle'
     if state == const.PLAY_STATE_LOADING:
@@ -65,9 +70,9 @@ def playstate_str(state):
     if state == const.PLAY_STATE_PLAYING:
         return 'Playing'
     if state == const.PLAY_STATE_FAST_FORWARD:
-        return 'Fast forward'
+        return 'Fast Forward'
     if state == const.PLAY_STATE_FAST_BACKWARD:
-        return 'Fast backward'
+        return 'Fast Backward'
     return 'Unsupported'
 
 

@@ -42,43 +42,73 @@ public class AppleTVBindingConstants {
     public static final String CHGROUP_MEDIA = "mediaInformation";
 
     public static final String CHANNEL_REMOTE_KEY = "remoteKey";
-    public static final String CHANNEL_REMOTE_SEQ = "keysSequence";
+
+    public static final String CHAN_GROUP_PLAYSTATUS = "playStatus";
     public static final String CHANNEL_PLAY_MODE = "playMode";
     public static final String CHANNEL_MEDIA_TYPE = "mediaType";
-    public static final String CHANNEL_REPEAT_STATE = "repeatState";
+    public static final String CHANNEL_TITLE = "title";
     public static final String CHANNEL_ALBUM = "album";
+    public static final String CHANNEL_ARTIST = "artist";
+    public static final String CHANNEL_GENRE = "genre";
+    public static final String CHANNEL_ARTWORK_URL = "artworkUrl";
+    public static final String CHANNEL_POSITION = "position";
+    public static final String CHANNEL_TOTAL_TIME = "totalTime";
+    public static final String CHANNEL_REPEAT_STATE = "repeat";
+    public static final String CHANNEL_SHUFFLE = "shuffle";
 
     // PyATV commands
     public static final String PLAYSTATUS_STATE = "play_state";
-    public static final String PLAYSTATUS_POSITION = "position";
-    public static final String PLAYSTATUS_TTIME = "total_time";
-    public static final String PLAYSTATUS_REPEAT = "repeat";
-    public static final String PLAYSTATUS_SHUFFLE = "shiffle";
+    public static final String PLAYSTATUS_MEDIA_TYPE = "media_type";
     public static final String PLAYSTATUS_TITLE = "title";
     public static final String PLAYSTATUS_ALBUM = "album";
     public static final String PLAYSTATUS_ARTIST = "artist";
     public static final String PLAYSTATUS_GENRE = "genre";
-    public static final String PLAYSTATUS_MEDIA_TYPE = "media_type";
     public static final String PLAYSTATUS_ARTWORK_URL = "artwork_url";
+    public static final String PLAYSTATUS_POSITION = "position";
+    public static final String PLAYSTATUS_TTIME = "total_time";
+    public static final String PLAYSTATUS_REPEAT = "repeat";
+    public static final String PLAYSTATUS_SHUFFLE = "shuffle";
 
     // Media types
-    public static final int MEDIA_TYPE_UNKNOWN = 1;
-    public static final int MEDIA_TYPE_VIDEO = 2;
-    public static final int MEDIA_TYPE_MUSIC = 3;
-    public static final int MEDIA_TYPE_TV = 4;
+    public static final String MEDIA_TYPE_UNKNOWN = "Unknown";
+    public static final String MEDIA_TYPE_VIDEO = "Video";
+    public static final String MEDIA_TYPE_MUSIC = "Music";
+    public static final String MEDIA_TYPE_TV = "TV";
+    public static final String MEDIA_TYPE_OTHER = "Unsupported";
 
     // Play state
-    public static final int PLAY_STATE_IDLE = 0;
-    public static final int PLAY_STATE_NO_MEDIA = 1;
-    public static final int PLAY_STATE_LOADING = 2;
-    public static final int PLAY_STATE_PAUSED = 3;
-    public static final int PLAY_STATE_PLAYING = 4;
-    public static final int PLAY_STATE_FAST_FORWARD = 5;
-    public static final int PLAY_STATE_FAST_BACKWARD = 6;
+    public static final String PLAY_STATE_IDLE = "Idle";
+    public static final String PLAY_STATE_NO_MEDIA = "No media";
+    public static final String PLAY_STATE_LOADING = "Loading";
+    public static final String PLAY_STATE_PAUSED = "Paused";
+    public static final String PLAY_STATE_PLAYING = "Playing";
+    public static final String PLAY_STATE_FAST_FORWARD = "Fast forward";
+    public static final String PLAY_STATE_FAST_BACKWARD = "Fast backward";
+    public static final String PLAY_STATE_OTHER = "Unsupported";
 
     // Repeat state
-    public static final int REPEAT_STATE_OFF = 0;
-    public static final int REPEAT_STATE_TRACK = 1;
-    public static final int REPEAT_STATE_ALL = 2;
+    public static final String REPEAT_STATE_OFF = "Off";
+    public static final String REPEAT_STATE_TRACK = "Track";
+    public static final String REPEAT_STATE_ALL = "All";
 
+    // Shuffle mode
+    public static final String SHUFFLE_STATE_ON = "True";
+    public static final String SHUFFLE_STATE_OFF = "False";
+
+    // atvremote commands
+    public static final String COMMAND_SCAN = "scan";
+    public static final String COMMAND_AUTH = "auth";
+    public static final String COMMAND_PAIR = "pair";
+    public static final String COMMAND_DEVICE_ID = "device_id";
+    public static final String COMMAND_PLAYING = "playing";
+    public static final String COMMAND_ARTWORK = "artwork";
+    public static final String COMMAND_ARTWORK_URL = "artwork_url";
+    public static final String COMMAND_SET_POSITION = "set_position";
+    public static final String COMMAND_SET_REPEAT = "set_repeat";
+    public static final String COMMAND_SET_SHUFFLE = "set_shuffle";
+    public static final String COMMAND_HASH = "hash";
+
+    public static final int UPDATE_STATUS_INTERVAL = 3; // check for updates every x sec
+    public static final int UPDATE_SKIP_COUNT = 5; // update every x triggers or when a key was pressed
+    public static final int PYATV_ACCESS_TIMEOUT = 10; // timeout for claiming the pyatv library access
 }

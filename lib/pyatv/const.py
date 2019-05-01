@@ -8,6 +8,9 @@ __version__ = '{}.{}'.format(__short_version__, PATCH_VERSION)
 
 # Corresponds to "mediakind", cmst.cmmk, in iTunes (but more coerced here)
 
+#: Idle / no media
+MEDIA_TYPE_NONE = 0
+
 #: Media type is unknown
 MEDIA_TYPE_UNKNOWN = 1
 

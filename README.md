@@ -3,7 +3,7 @@
 This openHAB 2 Binding implements control for the Apple-TV devices. This includes sending remote keys (control the Apple-TV from openHAB). An upcoming version will also process the status updates to provide information about the media being played.
 
 Author: markus7017
-Check put https://community.openhab.org/t/binding-for-apple-tv/65397 for more information, questions and contributing ideas. Any comment is welcome!
+Check  https://community.openhab.org/t/binding-for-apple-tv/65397 for more information, questions and contributing ideas. Any comment is welcome!
 
 <hr>Release: alpha2, check master branch for stable release<hr>
 <p>
@@ -16,19 +16,23 @@ Known issues:<br>
 <p>
 Please note:<br>
 This is an alpha release, it has bugs, requires manual install etc. Questions, feedback and contributions are welcome (e.g. improving this documentation).<p>
+
+Looking for contribution: If you are familar with HTML and CSS you are welcome to contribute a nice HABpanel widget. ;-)<p><p>
 <hr>
 
 ## Supported Devices, Platforms
 
 Devices
-* Apple-TV 3, latest firmware - fully supported, development environment
-* Apple-TV 4 - no information, should work
+* Apple-TV 4 - fully supported, verified by community
+* Apple-TV 3 - latest firmware - fully supported, development environment
 * Apple-TV 2 - no information, won't expect to work
 
 Platforms
 * macOS - dev environment is Mojave, but should also work with Sierra and High Sierra
 * Raspberyy with OpenHabian - default test environment
-* Synology NAS is work in progress
+* Ubuntu 18.04 - verified by the community
+* Synology NAS - supported running a virual environment, native support not yet verified
+* Win32 - only on request and with support of the user, because I know there are relevant differences in running Python on Win32 -> contact author
 * others currently not supported - contact author
 
 ## Supported Things
@@ -58,11 +62,11 @@ As described the binding integrates the Phyton-based PyATV project so you need t
 * Platform software packages:<br>
 sudo apt-get update<br>
 sudo apt-get install python3.5 python3-pip libpython3.5 python3-jpy<br>
-sudo apt-get install avhi-utils<p>
+sudo apt-get install avahi-utils<p>
 Python 3.5 for macOS can be found here: https://www.python.org/downloads/mac-osx/<p>
 
 * Python modules:<br>
-sudo pip3.5 install pyatv zeroconf sh<p>
+sudo python3.5 -m pip install pyatv zeroconf sh<p>
 On macOS use Homebrew to install the additional Python modules.<p>
 Make sure those modules go into the Python 3.5 folders if you have multiple versions installed (by using the pip3.5 command).<p>
 
@@ -117,15 +121,22 @@ Remote control commands:
 
 
 ## Full Example
+Note: PaperUI is recommended, if you want to use text files make sure to replace the thing id from you channel definition 
 
-* items:<p>
+* .things<p>
+<p>
+* .items<p>
 String Atv_Remote "ATV [%s]" {channel="appletv:device:34fc39d8:control#remoteKey"}<p>
 
-* sitemape:<p>
+* .sitemape<p>
 Switch item=Atv_Remote mappings=[up = "^" ]<br>
 Switch item=Atv_Remote mappings=[left = "<", select = "Sel", right = ">" ]<br>
 Switch item=Atv_Remote mappings=[menu = "Menu", down = "  v   ", play = "Play" ]<br>
 Switch item=Atv_Remote mappings=[previous='Prev', pause='Pause', next='Next']<p>
+
+* .rules<p>
+// wakeup the Apple-TV<br>
+sendCommand(Atv_Remote, "top_menu")
 
 ## Notes
 

@@ -136,6 +136,13 @@ The following keys could ne semd with channel remoteKey
  - top_menu - Go to main menu (long press menu)
  - menu - Press key menu
 
+There are special keys, which will be mapped into a key sequence:
+- movie - go to the Movie selection
+- music - go to the Music selection
+- tvshows - go to the TV Show selection
+
+The key sequences can be configured in the thing settings if the defaults don't work for your setup. RThe sequence must match the order of the menu items on the main menu.
+
 Note: You could also send a key sequence, e.g. "top_menu up up left left select"
 
 ## Full Example

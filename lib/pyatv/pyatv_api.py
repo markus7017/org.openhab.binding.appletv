@@ -20,30 +20,12 @@ import jpy
 
 javaHandler = None
 
-def _print_commands(title, api):
-    cmd_list = retrieve_commands(api)
-    commands = ' - ' + '\n - '.join(
-        map(lambda x: x[0] + ' - ' + x[1], sorted(cmd_list.items())))
-    print('{} commands:\n{}\n'.format(title, commands))
-
 class GlobalCommands:
     """Commands not bound to a specific device."""
     def __init__(self, args, loop):
         """Initialize a new instance of GlobalCommands."""
         self.args = args
         self.loop = loop
-
-    @asyncio.coroutine
-    def commands(self):
-        """Print a list with available commands."""
-        #_print_commands('Remote control', interface.RemoteControl)
-        #_print_commands('Metadata', interface.Metadata)
-        #_print_commands('Playing', interface.Playing)
-        #_print_commands('AirPlay', interface.AirPlay)
-        #_print_commands('Device', DeviceCommands)
-        #_print_commands('Global', self.__class__)
-
-        return 0
 
     @asyncio.coroutine
     def help(self):
@@ -87,15 +69,16 @@ class GlobalCommands:
         handler = pyatv.pair_with_apple_tv(
             self.loop, self.args.pin_code, self.args.remote_name,
             pairing_guid=self.args.pairing_guid)
+        javaHandler.info('Using pairing guid: 0x' + handler.pairing_guid)
         if self.args.pin_code is None:
             #print('Use any pin to pair with "{}" (press ENTER to stop)'.format(
             #    self.args.remote_name))
             javaHandler.info("ERROR: PIN missing!")
             raise AuthenticationError('PIN missing!')
         else:
-            print('Use pin {} to pair with "{}" (press ENTER to stop)'.format(
-                self.args.pin_code, self.args.remote_name))
-        javaHandler.info('Using pairing guid: 0x' + handler.pairing_guid)
+            message = 'Use pin {} to pair with "{}"'.format(
+                self.args.pin_code, self.args.remote_name)
+            javaHandler.info(message)
         javaHandler.info('Note: If remote does not show up, try rebooting your Apple TV')
 
         yield from handler.start(Zeroconf())
@@ -336,8 +319,6 @@ def _extract_command_with_args(cmd):
 	all the additional arguments are passed as arguments to the target
 	method.
 	"""
-	if cmd is None:
-		print('_extract_command_with_args: cmd is None!')
 	equal_sign = cmd.find('=')
 	if equal_sign == -1:
 		return cmd, []
@@ -349,7 +330,7 @@ def _extract_command_with_args(cmd):
 
 @asyncio.coroutine
 def _handle_commands(args, loop):
-	print('details: name={0}, address={1}, login_id={2}'.format(args.name, args.address, args.login_id))
+	#print('_handle_commands: name={0}, address={1}, login_id={2}'.format(args.name, args.address, args.login_id))
 	details = pyatv.AppleTVDevice(args.name, args.address, args.login_id)
 	atv = pyatv.connect_to_apple_tv(details, loop)
 	atv.push_updater.listener = PushListener()
@@ -359,9 +340,9 @@ def _handle_commands(args, loop):
 			yield from atv.airplay.load_credentials(args.airplay_credentials)
 
 		for cmd in args.command:
+			print('process cmd "{0}"'.format(str(cmd)))
 			if cmd is None:
 				break
-			print('process cmd "{0}"'.format(str(cmd)))
 			ret = yield from _handle_device_command(args, cmd, atv, loop)
 			if ret != 0:
 				return ret
@@ -458,7 +439,7 @@ class PyATV:
 		try:
 			print('Initialize Java access', flush=True)
 			javaHandler = handler
-			javaHandler.info('%(prog)s {0}'.format(const.__version__))
+			javaHandler.info('Embeeded PyATV {0}'.format(const.__version__))
 		except Exception as e:
 			print("Unable to access Java class: "+str(e), flush=True)
 			return 1

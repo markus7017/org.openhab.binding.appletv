@@ -316,6 +316,7 @@ class MetadataInternal(Metadata):
 	@property
 	def device_id(self):
 		"""Return a unique identifier for current device."""
+		pyatv_api.javaHandler.generatedDeviceId(self._device_id)
 		return self._device_id
 
 	def artwork(self):
@@ -332,7 +333,6 @@ class MetadataInternal(Metadata):
 	@asyncio.coroutine
 	def playing(self):
 		"""Return current device state."""
-		print('playing called')
 		playstatus = yield from self.apple_tv.playstatus()
 		return PlayingInternal(playstatus)
 

@@ -13,7 +13,8 @@ Known issues:
 * Binding configuration and device pairing needs to be implemented
 * On macOS Python 3.6 is used, on Linux Python 3.5
 * Support for Synology NAS (amd64) is not verified
-* Not yest very well tested with more than one Apple-TV (should work, may cause timing issues) 
+* Not yet very well tested with more than one Apple-TV (should work, may cause timing issues)
+* The binding copies the embedded pyatv modules to a temp folder on each startup, this will be solved with upcoming binding configuration. 
 * If some special conditions you'll see tons of exceptions when the binding is started. This needs to be reproduced and fixed.
 * The Python module contains some output to stdout/debug, this needs to be optimzed
 

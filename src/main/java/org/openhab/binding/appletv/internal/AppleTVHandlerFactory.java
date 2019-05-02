@@ -34,11 +34,12 @@ import org.osgi.service.component.annotations.Component;
  */
 @NonNullByDefault
 @Component(service = { ThingHandlerFactory.class, AppleTVHandlerFactory.class }, configurationPid = "binding.appletv")
-// @Component(configurationPid = "binding.appletv", service = ThingHandlerFactory.class)
 public class AppleTVHandlerFactory extends BaseThingHandlerFactory {
     private final AppleTVLogger logger = new AppleTVLogger(AppleTVHandlerFactory.class, "Factory");
+    private AppleTVBindingConfiguration bindingConfig = new AppleTVBindingConfiguration();
     private @Nullable LibPyATV pyATV = null;
     private String jsonDevices = "";
+    private String lastDeviceId = "";
 
     /**
      * Activate the bundle: save properties
@@ -47,14 +48,17 @@ public class AppleTVHandlerFactory extends BaseThingHandlerFactory {
      * @param configProperties set of properties from cfg (use same names as in
      *                             thing config)
      */
-
     @Activate
-
     protected void activate(ComponentContext componentContext, Map<String, Object> configProperties) {
         super.activate(componentContext);
         logger.debug("Activate HandlerFactory");
         pyATV = new LibPyATV("");
         logger.debug("PyATV installation path: {}", pyATV.getLibPath());
+    }
+
+    public void setBindingConfig(AppleTVBindingConfiguration bindingConfig) {
+        this.bindingConfig.update(bindingConfig);
+        logger.info("Binding configuration refreshed");
     }
 
     @Override
@@ -69,7 +73,6 @@ public class AppleTVHandlerFactory extends BaseThingHandlerFactory {
         if (AppleTVBindingConstants.THING_TYPE_APPLETV.equals(thingTypeUID)) {
             return new AppleTVHandler(thing, this);
         }
-
         return null;
     }
 
@@ -79,7 +82,7 @@ public class AppleTVHandlerFactory extends BaseThingHandlerFactory {
     }
 
     @SuppressWarnings("null")
-    public boolean sendCommands(String commands, AppleTVHandler handler, String ipAddress, String loginId) {
+    public boolean sendCommands(String commands, Object handler, String ipAddress, String loginId) {
         return pyATV.sendCommands(commands, handler, ipAddress, loginId);
     }
 
@@ -101,6 +104,10 @@ public class AppleTVHandlerFactory extends BaseThingHandlerFactory {
 
     }
 
+    public String getLastDeviceId() {
+        return lastDeviceId;
+    }
+
     /**
      * Callback for PyATV module delivery the device list in JSON format
      *
@@ -109,6 +116,10 @@ public class AppleTVHandlerFactory extends BaseThingHandlerFactory {
     public void devicesDiscovered(String json) {
         logger.debug("Discovered devices: {}", json);
         jsonDevices = json;
+    }
+
+    public void generatedDeviceId(String id) {
+        lastDeviceId = id;
     }
 
     public void info(String message) {

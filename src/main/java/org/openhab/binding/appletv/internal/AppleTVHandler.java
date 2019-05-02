@@ -38,7 +38,7 @@ public class AppleTVHandler extends BaseThingHandler {
 
     private final AppleTVLogger logger = new AppleTVLogger(AppleTVHandler.class, "Handler");
 
-    private AppleTVConfiguration config;
+    private AppleTVThingConfiguration config;
     private AppleTVHandlerFactory handlerFactory;
     private Map<String, Object> playStatus = new HashMap<>();
     private Map<String, String> channelMap = new HashMap<>();
@@ -68,13 +68,13 @@ public class AppleTVHandler extends BaseThingHandler {
         // Example for background initialization:
         scheduler.execute(() -> {
             logger.info("Initializing AppleTV");
-            config = getConfigAs(AppleTVConfiguration.class);
+            config = getConfigAs(AppleTVThingConfiguration.class);
 
             try {
-                logger.info("PyATV Library installed in {}", config.libPath);
                 Configuration configuration = this.getConfig();
-                configuration.remove("libPath");
-                configuration.put("libPath", handlerFactory.getLibPath());
+                // logger.info("PyATV Library installed in {}", config.libPath);
+                // configuration.remove("libPath");
+                // configuration.put("libPath", handlerFactory.getLibPath());
                 this.updateConfiguration(configuration);
                 logger.debug("Configuration updated.");
 
@@ -107,8 +107,23 @@ public class AppleTVHandler extends BaseThingHandler {
             // command
             switch (channelUID.getIdWithoutGroup()) {
                 case CHANNEL_REMOTE_KEY:
-                    logger.info("Send command(s): {}", command.toString());
-                    sendCommands(command.toString());
+                    String keySequence = command.toString();
+                    logger.info("Send key(s): {}", keySequence);
+                    switch (keySequence) {
+                        case KEY_MOVIE:
+                            keySequence = config.keyMovie;
+                            break;
+                        case KEY_MUSIC:
+                            keySequence = config.keyMusic;
+                            break;
+                        case KEY_TVSHOWS:
+                            keySequence = config.keyTVShow;
+                            break;
+                    }
+                    if (!keySequence.equals(command.toString())) {
+                        logger.debug("Key '{}' mapped to key sequence '{}'", command.toString(), keySequence);
+                    }
+                    sendCommands(keySequence);
                     requestUpdates = UPDATE_SKIP_COUNT;
                     break;
                 case CHANNEL_POSITION:
@@ -143,10 +158,10 @@ public class AppleTVHandler extends BaseThingHandler {
             sendCommands(COMMAND_PLAYING);
             if (requestUpdates > 0) {
                 --requestUpdates;
-                logger.debug("{} more updates requested", requestUpdates);
+                logger.trace("{} more updates requested", requestUpdates);
             }
         } else {
-            logger.debug("Update skipped {}/{}", (skipUpdate - 1) % UPDATE_SKIP_COUNT, UPDATE_SKIP_COUNT);
+            logger.trace("Update skipped {}/{}", (skipUpdate - 1) % UPDATE_SKIP_COUNT, UPDATE_SKIP_COUNT);
         }
     }
 
@@ -159,7 +174,7 @@ public class AppleTVHandler extends BaseThingHandler {
     public void statusEvent(String prop, String input) {
         String channel = channelMap.get(prop);
         if (channel != null) {
-            logger.debug("PyATV.Update: {}={}", prop, input);
+            logger.trace("PyATV.Update: {}={}", prop, input);
             String value = input;
             if (prop.equals(PLAYSTATUS_POSITION)) { // remember position for delta compution
                 position = Long.parseLong(value);
@@ -191,7 +206,7 @@ public class AppleTVHandler extends BaseThingHandler {
     private boolean updateChannel(String channel, String prop, String value) {
         Object current = playStatus.get(prop);
         if ((current != null) && !current.equals(value)) {
-            logger.debug("Updating chanel {} with {}", channel, value);
+            logger.trace("Updating chanel {} with {}", channel, value);
             updateState(CHAN_GROUP_PLAYSTATUS + "#" + channel, new StringType(value));
             playStatus.replace(prop, value);
             return true;
@@ -299,6 +314,14 @@ public class AppleTVHandler extends BaseThingHandler {
      */
     public void debug(String message) {
         logger.debug("{}", message);
+    }
+
+    public void devicesDiscovered(String json) {
+        logger.trace("Unexpected call to devicesDiscovered() to AppleTVHandler");
+    }
+
+    public void generatedDeviceId(String id) {
+        logger.trace("Unexpected call to generatedDeviceId() to AppleTVHandler");
     }
 
     private void initChannelMap() {

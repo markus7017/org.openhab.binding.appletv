@@ -205,7 +205,7 @@ public class LibPyATV {
 
         boolean acquired = false;
         try {
-            logger.info("Sending command {} to ip {}, lid {}", commands, ipAddress, loginId);
+            logger.trace("Sending command {} to ip {}, lid {}", commands, ipAddress, loginId);
 
             String[] args = new String[20];
             // PyObject res = plugIn.exec("--address 192.168.x.y --login_id 0xXXXXXXXXXXXXXXXX top_menu");

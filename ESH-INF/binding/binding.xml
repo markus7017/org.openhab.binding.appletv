@@ -8,4 +8,26 @@
 	<description>This is the binding for AppleTV.</description>
 	<author>Markus Michels</author>
 
+    <config-description>
+        <parameter name="remoteName" type="text">
+            <default>openHAB</default>
+            <label>Remote Name</label>
+            <description>This text specifies the remote name, which is used for pairing.</description>
+        </parameter>
+        <parameter name="updateInterval" type="integer">
+            <default>3</default>
+            <label>Status Update Interval</label>
+            <description>The play status (e.g. position) gets updated periodically. Default: 3sec
+            Avoid too much polling by selecting a meaningful value, especially if you have multiple Apple-TVs.</description>
+            <advanced>true</advanced>
+        </parameter>
+        <parameter name="libPath" type="text">
+            <default></default>
+            <label>Library Path</label>
+            <description>The binding brings some required modules, which will be installed in the selected folder.
+            Default: A temporary folder in &lt;temp-dir&gt;/ohlib-&lt;generated id&gt;, The changes gets active next time the binding is started.</description>
+            <advanced>true</advanced>
+        </parameter>
+    </config-description>
+    
 </binding:binding>

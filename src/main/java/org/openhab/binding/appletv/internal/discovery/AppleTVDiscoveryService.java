@@ -20,19 +20,23 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.smarthome.config.core.Configuration;
 import org.eclipse.smarthome.config.discovery.AbstractDiscoveryService;
 import org.eclipse.smarthome.config.discovery.DiscoveryResult;
 import org.eclipse.smarthome.config.discovery.DiscoveryResultBuilder;
 import org.eclipse.smarthome.config.discovery.DiscoveryService;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.ThingUID;
+import org.openhab.binding.appletv.internal.AppleTVBindingConfiguration;
 import org.openhab.binding.appletv.internal.AppleTVHandler;
 import org.openhab.binding.appletv.internal.AppleTVHandlerFactory;
 import org.openhab.binding.appletv.internal.AppleTVLogger;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
@@ -44,13 +48,15 @@ import com.google.gson.Gson;
  *
  * @author Markus Michels - Initial contribution
  */
-@Component(service = DiscoveryService.class, immediate = true, configurationPid = "binding.appletv")
+@Component(service = DiscoveryService.class, immediate = true, configurationPid = "discovery.appletv")
 public class AppleTVDiscoveryService extends AbstractDiscoveryService {
     private final AppleTVLogger logger = new AppleTVLogger(AppleTVHandler.class, "Discovery");
     private AppleTVHandlerFactory handlerFactory = null;
     private ScheduledFuture<?> discoveryJob;
+    private final AppleTVBindingConfiguration bindingConfig = new AppleTVBindingConfiguration();
 
     class ATVDevice {
+        String deviceId = "";
         String name = "";
         String ipAddress = "";
         String loginId = "";
@@ -73,6 +79,16 @@ public class AppleTVDiscoveryService extends AbstractDiscoveryService {
     protected void activate(@Nullable Map<@NonNull String, @Nullable Object> configProperties) {
         logger.debug("Config Parameters: {}", configProperties);
         super.activate(configProperties); // starts background discovery
+    }
+
+    @Override
+    @Modified
+    protected void modified(Map<String, Object> config) {
+        super.modified(config);
+        // We update instead of replace the configuration object, so that if the user updates the
+        // configuration, the values are automatically available in all handlers. Because they all
+        // share the same instance.
+        bindingConfig.update(new Configuration(config).as(AppleTVBindingConfiguration.class));
     }
 
     @Override
@@ -103,8 +119,13 @@ public class AppleTVDiscoveryService extends AbstractDiscoveryService {
             Gson gson = new Gson();
             ATVDeviceList devList = gson.fromJson(jsonDevices, ATVDeviceList.class);
             for (ATVDevice dev : devList.devices) {
-                logger.info("Device {} discovered: ipAddress={}, loginId={}", dev.name, dev.ipAddress, dev.loginId);
+                handlerFactory.sendCommands(COMMAND_DEVICE_ID, handlerFactory, dev.ipAddress, dev.loginId);
+                dev.deviceId = handlerFactory.getLastDeviceId(); // set by callback
+                logger.info("Device {} discovered: ipAddress={}, deviceId={}, loginId={}", dev.name, dev.ipAddress,
+                        dev.deviceId, dev.loginId);
+
                 Map<String, Object> properties = new HashMap<>();
+                properties.put(PROPERTY_ID, dev.deviceId);
                 properties.put(PROPERTY_VENDOR, "Apple");
                 properties.put(PROPERTY_IP, dev.ipAddress);
                 properties.put(PROPERTY_LOGIN_ID, dev.loginId);
@@ -118,13 +139,12 @@ public class AppleTVDiscoveryService extends AbstractDiscoveryService {
 
     private DiscoveryResult createDiscoveryResult(ATVDevice device, Map<String, Object> properties) {
         ThingUID thingUID = createThingUID(device);
-        properties.put(PROPERTY_ID, device.loginId);
         return DiscoveryResultBuilder.create(thingUID).withLabel(device.name).withProperties(properties)
                 .withRepresentationProperty(PROPERTY_ID).build();
     }
 
     private ThingUID createThingUID(ATVDevice device) {
-        return new ThingUID(THING_TYPE_APPLETV, device.loginId);
+        return new ThingUID(THING_TYPE_APPLETV, device.deviceId);
     }
 
     @Override
@@ -156,10 +176,11 @@ public class AppleTVDiscoveryService extends AbstractDiscoveryService {
         if (handlerFactory != null) {
             this.handlerFactory = handlerFactory;
             logger.debug("HandlerFactory bound to AppleTVDiscoveryService");
+            handlerFactory.setBindingConfig(bindingConfig);
 
             logger.info("Starting background discovery");
             if (discoveryJob == null || discoveryJob.isCancelled()) {
-                // discoveryJob = scheduler.scheduleWithFixedDelay(this::startScan, 20, 15 * 60, TimeUnit.SECONDS);
+                discoveryJob = scheduler.scheduleWithFixedDelay(this::startScan, 20, 15 * 60, TimeUnit.SECONDS);
             }
         }
     }

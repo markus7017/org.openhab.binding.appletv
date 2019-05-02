@@ -56,6 +56,11 @@ public class AppleTVBindingConstants {
     public static final String CHANNEL_REPEAT_STATE = "repeat";
     public static final String CHANNEL_SHUFFLE = "shuffle";
 
+    // Special keys, will be mapped to the configured key sequences
+    public static final String KEY_MOVIE = "movie";
+    public static final String KEY_MUSIC = "music";
+    public static final String KEY_TVSHOWS = "tvshows";
+
     // PyATV commands
     public static final String PLAYSTATUS_STATE = "play_state";
     public static final String PLAYSTATUS_MEDIA_TYPE = "media_type";

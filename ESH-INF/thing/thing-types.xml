@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<thing:thing-descriptions bindingId="appletv"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
-        xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
-
+<thing:thing-descriptions xmlns:thing="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" bindingId="appletv"
+    xsi:schemaLocation="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0 http://eclipse.org/smarthome/schemas/thing-description-1.0.0.xsd">
 	<thing-type id="device">
 		<label>Apple-TV Device</label>
 		<description>This thing represents an Apple-TV</description>
@@ -28,21 +26,6 @@
             <parameter-group name="advancedOptions">
                 <label>Advanced Options</label>
             </parameter-group>
-
-            <parameter name="pairingPIN" type="text">
-                <default>1234</default>
-                <label>Pairing PIN</label>
-                <description>Pairing the openHAB remote with a selected Apple-TV requires a PIN. Go to Settings-&gt;Genera-&gt;Remotes on the TV screen/Apple-TV and start pairing.
-                   You should see a new remote (openHAB), select ""add remote" and enter the pairing PIN code.
-                   Sometimes the new remote doesn't show up, in this case you need to restart your Apple-TV</description>
-            </parameter>
-            <parameter name="doPairing" type="boolean">
-                <default>false</default>
-                <label>Do Pairing</label>
-                <description>Enable this option to start device pairing. You need to go to Settings-&gt;Genera-&gt;Remotes on the TV screen/Apple-TV.
-                   Once pairing is initiated you should see a new remote. Add the remote and enter the PIN code.
-                   Sometimes the new remote doesn't show up, in this case you need to restart your Apple-TV.</description>
-            </parameter>
 
             <parameter name="keyMovie" type="text" groupName="keySequence">
                 <default>top_menu up left left left left down left select select right</default>

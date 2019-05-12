@@ -19,13 +19,17 @@ import org.eclipse.jdt.annotation.NonNull;
  * @author Markus Michels - initial contribution
  */
 public class AppleTVBindingConfiguration {
-    public String remoteName;
     public Integer updateInterval = UPDATE_STATUS_INTERVAL;
     public String libPath = "";
+    public boolean doPairing;
+    public String remoteName;
+    public String pairingPIN;
 
     public void update(@NonNull AppleTVBindingConfiguration newConfiguration) {
-        this.remoteName = newConfiguration.remoteName;
         this.libPath = newConfiguration.libPath;
         this.updateInterval = newConfiguration.updateInterval;
+        this.doPairing = newConfiguration.doPairing;
+        this.remoteName = newConfiguration.remoteName;
+        this.pairingPIN = newConfiguration.pairingPIN;
     }
 }

@@ -9,7 +9,7 @@ Bundle-Name: AppleTV Binding
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-SymbolicName: org.openhab.binding.appletv;singleton:=true
 Bundle-Vendor: openHAB
-Bundle-Version: 2.5.0.qualifier
+Bundle-Version: 2.4.0.qualifier
 Import-Package: 
  com.google.gson,
  org.apache.commons.lang,
@@ -26,5 +26,6 @@ Import-Package:
  org.eclipse.smarthome.core.util,
  org.osgi.service.component,
  org.osgi.service.component.annotations;resolution:=optional,
+ org.osgi.framework,
  org.slf4j
 Service-Component: OSGI-INF/*.xml

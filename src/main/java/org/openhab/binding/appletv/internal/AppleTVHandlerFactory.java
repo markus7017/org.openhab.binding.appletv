@@ -1,18 +1,18 @@
 /**
- * Copyright (c) 2010-2019 by the respective copyright holders.
+ * Copyright (c) 2010-2018 by the respective copyright holders.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * SPDX-License-Identifier: EPL-2.0
  */
 package org.openhab.binding.appletv.internal;
 
 import static org.openhab.binding.appletv.internal.AppleTVBindingConstants.SUPPORTED_THING_TYPES_UIDS;
 
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -37,6 +37,9 @@ import org.osgi.service.component.annotations.Component;
 public class AppleTVHandlerFactory extends BaseThingHandlerFactory {
     private final AppleTVLogger logger = new AppleTVLogger(AppleTVHandlerFactory.class, "Factory");
     private AppleTVBindingConfiguration bindingConfig = new AppleTVBindingConfiguration();
+
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
     private @Nullable LibPyATV pyATV = null;
     private String jsonDevices = "";
     private String lastDeviceId = "";
@@ -59,6 +62,25 @@ public class AppleTVHandlerFactory extends BaseThingHandlerFactory {
     public void setBindingConfig(AppleTVBindingConfiguration bindingConfig) {
         this.bindingConfig.update(bindingConfig);
         logger.info("Binding configuration refreshed");
+
+        if (bindingConfig.doPairing) {
+            scheduler.execute(() -> {
+                try {
+                    logger.info("Initiate pairing, RemoteName={}, PIN={}", bindingConfig.remoteName,
+                            bindingConfig.pairingPIN);
+                    pyATV.pairDevice(this, bindingConfig.remoteName, bindingConfig.pairingPIN);
+                } catch (AppleTVException e) {
+                    logger.info("FATAL: Pairing request failed!");
+                } finally {
+                    /*
+                     * Configuration configuration = this.getConfig();
+                     * configuration.remove("doPairing");
+                     * configuration.put("doPairing", "false");
+                     * this.updateConfiguration(configuration);
+                     */
+                }
+            });
+        }
     }
 
     @Override
@@ -83,7 +105,7 @@ public class AppleTVHandlerFactory extends BaseThingHandlerFactory {
 
     @SuppressWarnings("null")
     public boolean sendCommands(String commands, Object handler, String ipAddress, String loginId) {
-        return pyATV.sendCommands(commands, handler, ipAddress, loginId);
+        return pyATV.sendCommands(commands, handler, ipAddress, loginId, null);
     }
 
     @SuppressWarnings("null")

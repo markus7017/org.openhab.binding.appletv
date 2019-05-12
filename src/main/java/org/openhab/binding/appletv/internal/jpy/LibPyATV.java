@@ -1,12 +1,11 @@
 /**
- * Copyright (c) 2010-2019 by the respective copyright holders.
+ * Copyright (c) 2010-2018 by the respective copyright holders.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  */
-
 package org.openhab.binding.appletv.internal.jpy;
 
 import static org.openhab.binding.appletv.internal.AppleTVBindingConstants.*;
@@ -26,6 +25,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jpy.PyLib;
 import org.jpy.PyModule;
 import org.jpy.PyObject;
+import org.openhab.binding.appletv.internal.AppleTVException;
 import org.openhab.binding.appletv.internal.AppleTVHandler;
 import org.openhab.binding.appletv.internal.AppleTVHandlerFactory;
 import org.openhab.binding.appletv.internal.AppleTVLogger;
@@ -201,7 +201,7 @@ public class LibPyATV {
      * @param loginId   Login ID resulting from device pairing
      * @return true: successful, false: failed, e.g. exception in the PyATV module
      */
-    public boolean sendCommands(String commands, Object handler, String ipAddress, String loginId) {
+    public boolean sendCommands(String commands, Object handler, String ipAddress, String loginId, String cmdArgs[]) {
 
         boolean acquired = false;
         try {
@@ -219,6 +219,11 @@ public class LibPyATV {
             if (!loginId.isEmpty()) {
                 args[a++] = "--login_id";
                 args[a++] = loginId;
+            }
+            if (cmdArgs != null) {
+                for (String s : cmdArgs) {
+                    args[a++] = s;
+                }
             }
 
             StringTokenizer tokenizer = new StringTokenizer(commands, " ");
@@ -259,7 +264,7 @@ public class LibPyATV {
              * return "";
              * }
              */
-            if (!sendCommands(COMMAND_SCAN, handlerFactory, "", "")) {
+            if (!sendCommands(COMMAND_SCAN, handlerFactory, "", "", null)) {
                 logger.error("Scanning for Apple-TV devices failed!");
             }
         } catch (Exception e) {
@@ -270,6 +275,33 @@ public class LibPyATV {
             }
         }
         return "";
+    }
+
+    /**
+     * Pair openHAB remote with an Apple-TV device
+     *
+     * @param handler    - AppleTVHandler instance
+     * @param remoteName - Name of the remote, which is display in the Appe-TV settings to select the corect remote for
+     *                       pairing
+     * @param pairingPIN - PIN code for pairing. Will be requested by OH and must be entered on the TV screen
+     *
+     * @return true: successful, false: failed
+     *
+     * @throws AppleTVException
+     */
+    public boolean pairDevice(AppleTVHandlerFactory handler, String remoteName, String pairingPIN)
+            throws AppleTVException {
+        String args[] = new String[4];
+        int a = 0;
+        if (!remoteName.isEmpty()) {
+            args[a++] = "--remote-name";
+            args[a++] = remoteName;
+        }
+        if (!pairingPIN.isEmpty()) {
+            args[a++] = "--pin";
+            args[a++] = pairingPIN;
+        }
+        return sendCommands(COMMAND_PAIR, handler, "", "", args);
     }
 
     public String getLibPath() {

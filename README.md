@@ -10,6 +10,7 @@ Release: alpha2, check master branch for stable release
 ---
 
 Known issues:
+
 * Binding configuration and device pairing needs to be implemented
 * On macOS Python 3.6 is used, on Linux Python 3.5
 * Support for Synology NAS (amd64) is not verified
@@ -28,11 +29,13 @@ Looking for contribution: If you are familar with HTML and CSS you are welcome t
 ## Supported Devices, Platforms
 
 Devices
+
 * Apple-TV 4 - fully supported, verified by community
 * Apple-TV 3 - latest firmware - fully supported, development environment
 * Apple-TV 2 - no information, won't expect to work
 
 Platforms
+
 * macOS - dev environment is Mojave, but should also work with Sierra and High Sierra
 * Raspberyy with OpenHabian - default test environment
 * Ubuntu 18.04 - verified by the community
@@ -50,6 +53,7 @@ Platforms
 
 The binding supports auto discovery of Apple-TVs on the local network. Once the Apple-TV (using atvremote) the binding could discover the device. Integration of pairing functionality is planned for an upcoming release.
 For now you need to pair your device first (using atvremote cli) before performing auto discovery in Paper UI.
+
 * make sure all required packages have been installed
 * run "atvremote scan" - this will show you the ip address of your Apple TV device
 * run "atvremote pair -r openHAB -  this will initialte the pairing process
@@ -67,6 +71,7 @@ Proceed with Thing Configuration below.
 For now the bindinng is not available on the Eclipse Smart Home Market Place nor part of the openHAB distribution so you need to install it manually.
 
 As described the binding integrates the Phyton-based PyATV project so you need to install Python 3.5 and the required modules:
+
 * Platform software packages:
 sudo apt-get update
 sudo apt-get install python3.5 python3-pip libpython3.5 python3-jpy
@@ -84,6 +89,7 @@ atvremote --address <ip address>  --login_id <login id from pairing>  top_menu
 should work without error messages and move the focus on the Apple-TV to the top menu.
 
 * The binding itself
+
 Copy the binding jar to openHAB's addons folder, add the thing in Paper UI (see below) and restart openHAB.
 
 ## Binding Configuration
@@ -95,6 +101,7 @@ There are no textual configuration files.
 Before adding the thing make sure that all pre-requisites are met and all modules have been installed (see above).
 
 You could use Paper UI to run auto discvery from the Inbox or to add a thing manually
+
 * Go to Configuration->Things and click on '+'
 * Select Apple TV Binding
 * fill in the device's ip address and login id as discovered through the pairing process
@@ -105,7 +112,6 @@ You could use Paper UI to run auto discvery from the Inbox or to add a thing man
 |Group      | Channel   |Type                                                                              |
 |-----------|-----------|----------------------------------------------------------------------------------|
 |control    | remoteKey |Send a key or key sequence to the Apple-TV, see below for valid keys              |
-|-----------|-----------|----------------------------------------------------------------------------------|
 |playStatus | playMode  |Current play mode: No Media/Idle/Loading/Playing/Paused/Fast Forward/Fast Backward|
 |           | mediaType |Media type being played: None/Music/Video/TV/Unknown                              ]
 |           | title     |Title of current media.                                                           ]
@@ -123,6 +129,7 @@ You could use Paper UI to run auto discvery from the Inbox or to add a thing man
 ## Keys
 
 The following keys could ne semd with channel remoteKey
+
  - up - Press key up
  - down - Press key down
  - left - Press key left
@@ -137,6 +144,7 @@ The following keys could ne semd with channel remoteKey
  - menu - Press key menu
 
 There are special keys, which will be mapped into a key sequence:
+
 - movie - go to the Movie selection
 - music - go to the Music selection
 - tvshows - go to the TV Show selection
@@ -146,20 +154,24 @@ The key sequences can be configured in the thing settings if the defaults don't 
 Note: You could also send a key sequence, e.g. "top_menu up up left left select"
 
 ## Full Example
+
 Note: PaperUI is recommended, if you want to use text files make sure to replace the thing id from you channel definition 
 
 * .things
 
 * .items
+
 String Atv_Remote "ATV [%s]" {channel="appletv:device:34fc39d8:control#remoteKey"}
 
 * .sitemap
+
 Switch item=Atv_Remote mappings=[up = "^" ]
 Switch item=Atv_Remote mappings=[left = "<", select = "Sel", right = ">" ]
 Switch item=Atv_Remote mappings=[menu = "Menu", down = "  v   ", play = "Play" ]
 Switch item=Atv_Remote mappings=[previous='Prev', pause='Pause', next='Next']
 
 * .rules
+
 // wakeup the Apple-TV
 sendCommand(Atv_Remote, "top_menu")
 

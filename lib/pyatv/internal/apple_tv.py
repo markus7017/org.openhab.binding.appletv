@@ -229,21 +229,16 @@ class PlayingInternal(Playing):
 	def media_type(self):
 		"""Type of media is currently playing, e.g. video, music."""
 		state = dmap.first(self.playstatus, 'cmst', 'caps')
-		print('midia_type state={0}'.format(state))
 		if not state:
 			return const.MEDIA_TYPE_NONE
 
 		mediakind = dmap.first(self.playstatus, 'cmst', 'cmmk')
-		print('mediakind={0}'.format(mediakind))
 		if mediakind == const.MEDIA_TYPE_UNKNOWN:
 			# Fallback: if artist or album exists we assume music (not present
 			# for video)
-			print('artist={0}, album{1}'.format(self.artist.strip("\0"), self.album.strip("\0")))
 			if self.artist or self.album:
-				print('media_type=Music')
 				return const.MEDIA_TYPE_MUSIC
 
-			print('media_type=Video')
 			return const.MEDIA_TYPE_VIDEO
 
 		if mediakind is not None:

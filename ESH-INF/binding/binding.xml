@@ -6,24 +6,11 @@
 	<author>Markus Michels</author>
 
     <config-description>
-        <parameter name="pairingPIN" type="text">
-            <default>1234</default>
-            <label>Pairing PIN</label>
-            <description>Pairing the openHAB remote with a selected Apple-TV requires a PIN. Go to Settings-&gt;Genera-&gt;Remotes on the TV screen/Apple-TV and start pairing.
-               You should see a new remote (openHAB), select ""add remote" and enter the pairing PIN code.
-               Sometimes the new remote doesn't show up, in this case you need to restart your Apple-TV</description>
-        </parameter>
-        <parameter name="remoteName" type="text">
-            <default>openHAB</default>
-            <label>Remote Name</label>
-            <description>This text specifies the remote name, which is used for pairing.</description>
-        </parameter>
-        <parameter name="doPairing" type="boolean">
-            <default>false</default>
-            <label>Do Pairing</label>
-            <description>Enable this option to start device pairing. You need to go to Settings-&gt;Genera-&gt;Remotes on the TV screen/Apple-TV.
-               Once pairing is initiated you should see a new remote. Add the remote and enter the PIN code.
-               Sometimes the new remote doesn't show up, in this case you need to restart your Apple-TV.</description>
+        <parameter name="autoDiscovery" type="boolean">
+            <default>true</default>
+            <label>Enable Auto Discovery</label>
+            <description>If enabled new Apple-TVs will be discovered in the background. This could be disabled when you discovered all of your devices.
+                You could use the manual discovery from Paper UIs Inbox at any time.</description>
         </parameter>
 
         <parameter name="updateInterval" type="integer">

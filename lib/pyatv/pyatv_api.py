@@ -6,6 +6,7 @@ import logging
 import binascii
 import asyncio
 import traceback
+import time
 
 import argparse
 from argparse import ArgumentTypeError
@@ -66,10 +67,12 @@ class GlobalCommands:
     def pair(self):
         """Pair pyatv as a remote control with an Apple TV."""
         global javaHandler
+        
         handler = pyatv.pair_with_apple_tv(
             self.loop, self.args.pin_code, self.args.remote_name,
             pairing_guid=self.args.pairing_guid)
         javaHandler.info('Using pairing guid: 0x' + handler.pairing_guid)
+        javaHandler.statusEvent("pairing_guid", str(handler.pairing_guid))
         if self.args.pin_code is None:
             #print('Use any pin to pair with "{}" (press ENTER to stop)'.format(
             #    self.args.remote_name))
@@ -82,20 +85,15 @@ class GlobalCommands:
         javaHandler.info('Note: If remote does not show up, try rebooting your Apple TV')
 
         yield from handler.start(Zeroconf())
-        yield from self.loop.run_in_executor(None, sys.stdin.readline)
-        yield from handler.stop()
+        yield from self.loop.run_in_executor(None, wait_pairing(handler))
+        yield from handler.stop() 
 
         # Give some feedback to the user
         if handler.has_paired:
-            javaHandler.info('Pairing seems to have succeeded, yey!')
-            javaHandler.info('Login id from paring: 0x{}'.format(
-                handler.pairing_guid))
-            javaHandler.statusEvent("login_id", handler.pairing_guid())
+            javaHandler.pairingResult(true, "Pairing completed successful.")
         else:
-            javaHandler.info('ERROR: Timeout on pairing!')
-            raise AuthenticationError('Timeout on pairing!')
+            javaHandler.pairingResult(false, "Pairing failed or no response!")
             return 1
-
         return 0
 
 
@@ -340,9 +338,9 @@ def _handle_commands(args, loop):
 			yield from atv.airplay.load_credentials(args.airplay_credentials)
 
 		for cmd in args.command:
-			print('process cmd "{0}"'.format(str(cmd)))
 			if cmd is None:
 				break
+			print('process cmd "{0}"'.format(str(cmd)))
 			ret = yield from _handle_device_command(args, cmd, atv, loop)
 			if ret != 0:
 				return ret
@@ -415,6 +413,21 @@ def _exec_command(obj, command, print_result, *args):
 		traceback.print_exc(file=sys.stderr)
 		return 1
 	return 1
+
+def wait_pairing(handler):
+    global javaHandler
+    print('Wait on pairing result...')
+    i = 60
+    while i > 0:
+        time.sleep(1)
+        print('{} more seconds'.format(i))
+        if handler.has_paired:
+            javaHandler.info('Pairing completed.')
+            return 0
+        i -= 1 
+    print('Pairing timeout!')
+    return 1
+
 
 def _pretty_print(data):
 	global javaHandler

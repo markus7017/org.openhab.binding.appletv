@@ -162,9 +162,12 @@ class Playing:
 
 		position = self.position
 		total_time = self.total_time
+		total_percent = None
+		print('Play state: position={0}, total_time={1}'.format(position, total_time))
 		if position is not None and total_time is not None and total_time != 0:
+			total_percent = float(position)/float(total_time)
 			output.append('  Position: {0}/{1}s ({2:.1%})'.format(
-				position, total_time, float(position)/float(total_time)))
+				position, total_time, total_percent))
 		elif position is not None and position != 0:
 			output.append('  Position: {0}s'.format(position))
 		elif total_time is not None and position != 0:
@@ -173,6 +176,8 @@ class Playing:
 			pyatv_api.javaHandler.statusEvent("position", str(position))
 		if total_time is not None:
 			pyatv_api.javaHandler.statusEvent("total_time", str(total_time))
+		if total_percent is not None:
+			pyatv_api.javaHandler.statusEvent("total_percent", str(total_percent))
 
 		if self.repeat is not None:
 			output.append('	Repeat: {0}'.format(

@@ -25,14 +25,15 @@ import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
+import org.openhab.binding.appletv.internal.jpy.LibATVCallback;
 
 /**
  * The {@link AppleTVHandler} is responsible for handling commands, which are
  * sent to one of the channels.
  *
- * @author markus7017 - Initial contribution
+ * @author Markus Michels - Initial contribution
  */
-public class AppleTVHandler extends BaseThingHandler {
+public class AppleTVHandler extends BaseThingHandler implements LibATVCallback {
 
     private final AppleTVLogger logger = new AppleTVLogger(AppleTVHandler.class, "Handler");
 
@@ -78,17 +79,31 @@ public class AppleTVHandler extends BaseThingHandler {
 
                 // pass class instance for callbacks
                 handlerFactory.initPyATV(this);
-                // updatePlayStatus();
+                updateStatus(ThingStatus.ONLINE);
+
+                if (config.doPairing) {
+                    try {
+                        logger.info("Initiate pairing, RemoteName={}, PIN={}", config.remoteName, config.pairingPIN);
+                        handlerFactory.pairDevice(this, config.remoteName, config.pairingPIN);
+                    } catch (AppleTVException e) {
+                        logger.info("FATAL: Pairing request failed!");
+                    } finally {
+                        configuration.remove("doPairing");
+                        configuration.put("doPairing", "false");
+                        this.updateConfiguration(configuration);
+                    }
+                }
+
+                updatePlayStatus();
                 logger.debug("Starting background status update");
                 if (statusJob == null || statusJob.isCancelled()) {
                     statusJob = scheduler.scheduleWithFixedDelay(this::updatePlayStatus, 5, UPDATE_STATUS_INTERVAL,
                             TimeUnit.SECONDS);
                 }
 
-                updateStatus(ThingStatus.ONLINE);
             } catch (AppleTVException e) {
                 logger.error("Call to PyATV failed: {} ({})", e.getMessage(), e.getClass());
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
                         "Uneable to initialize thing: " + e.getMessage());
             }
         });
@@ -114,7 +129,7 @@ public class AppleTVHandler extends BaseThingHandler {
                     String keySequence = command.toString();
                     logger.info("Send key(s): {}", keySequence);
                     switch (keySequence) {
-                        case KEY_MOVIE:
+                        case KEY_MOVIES:
                             keySequence = config.keyMovie;
                             break;
                         case KEY_MUSIC:
@@ -134,6 +149,10 @@ public class AppleTVHandler extends BaseThingHandler {
                     logger.info("Set position to {}", command.toString());
                     setPosition(command.toString());
                     break;
+                case CHANNEL_TOTAL_PERCENT:
+                    logger.info("Set position to {}%", command.toString());
+                    setPosition(command.toString() + "%");
+                    break;
                 case CHANNEL_SHUFFLE:
                     logger.info("Set shuffle to {}", command.toString());
                     setShuffle(command.toString());
@@ -143,6 +162,8 @@ public class AppleTVHandler extends BaseThingHandler {
                     setRepeat(command.toString());
                     break;
             }
+            // request update on every set operation
+            requestUpdates++;
         }
     }
 
@@ -175,6 +196,7 @@ public class AppleTVHandler extends BaseThingHandler {
      * @param prop
      * @param value
      */
+    @Override
     public void statusEvent(String prop, String input) {
         String channel = channelMap.get(prop);
         if (channel != null) {
@@ -187,6 +209,10 @@ public class AppleTVHandler extends BaseThingHandler {
             if (prop.equals(PLAYSTATUS_TTIME)) {
                 totalTime = Long.parseLong(value);
                 value = Sec2Time(value); // channel expects string
+            }
+            if (prop.equals(PLAYSTATUS_TPERCENT)) {
+                float totalPercent = Float.parseFloat(value);
+                value = String.format("%.0f%%", totalPercent * 100.0);
             }
 
             boolean updated = updateChannel(channel, prop, value);
@@ -218,18 +244,21 @@ public class AppleTVHandler extends BaseThingHandler {
         return false;
     }
 
+    /**
+     * Compute new position, format:
+     * hh:mmn:ss new offset, will be converted to sec
+     * mm:ss short form, will be converted to sec (max position=59:59!)
+     * <n> new position in sec
+     * +<n> skip <n> sec forward
+     * -<n> skip <n> sec backward
+     * <n>% -> relative, based on total time
+     *
+     * New offset will be adjusted if > totalTime
+     *
+     * @param newPosition - new positon, could be absolute, relative or in %
+     */
     boolean setPosition(String newPosition) {
 
-        /*
-         * Compute new position, format:
-         * hh:mmn:ss new offset, will be converted to sec
-         * mm:ss short form, will be converted to sec (max position=59:59!)
-         * <n> new position in sec
-         * +<n> skip <n> sec forward
-         * -<n> skip <n> sec backward
-         *
-         * New offset will be adjusted if > totalTime
-         */
         Long oldPosition = position;
         Long secPosition = -1l;
         if (StringUtils.isNumeric(newPosition)) {
@@ -244,6 +273,15 @@ public class AppleTVHandler extends BaseThingHandler {
             }
             if ((totalTime != 0l) && secPosition > totalTime) {
                 secPosition = totalTime; // adjust if behind end
+            }
+        }
+        if (newPosition.contains("%")) {
+            if (totalTime != 0l) {
+                float percentage = Float.parseFloat(StringUtils.substringBefore(newPosition, "%"));
+                secPosition = (long) ((float) totalTime * percentage / 100.0);
+                logger.info("Set position to {}sec ({})", secPosition, newPosition);
+            } else {
+                logger.info("Can't set new position to {}, because total time is not given", newPosition);
             }
         } else {
             secPosition = time2Sec(newPosition);
@@ -302,11 +340,20 @@ public class AppleTVHandler extends BaseThingHandler {
         return Long.parseLong(time);
     }
 
+    @Override
+    public void pairingResult(boolean result, String message) {
+        logger.info(message);
+        if (!result) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, message);
+        }
+    }
+
     /**
      * This function will be called from the PyATV module to display an info message
      *
      * @param message
      */
+    @Override
     public void info(String message) {
         logger.info("{}", message);
     }
@@ -316,37 +363,42 @@ public class AppleTVHandler extends BaseThingHandler {
      *
      * @param message
      */
+    @Override
     public void debug(String message) {
         logger.debug("{}", message);
     }
 
+    @Override
     public void devicesDiscovered(String json) {
-        logger.trace("Unexpected call to devicesDiscovered() to AppleTVHandler");
+        logger.trace("Unexpected call to AppleTVHandler.devicesDiscovered()");
     }
 
+    @Override
     public void generatedDeviceId(String id) {
-        logger.trace("Unexpected call to generatedDeviceId() to AppleTVHandler");
+        logger.trace("Unexpected call to AppleTVHandler.generatedDeviceId()");
     }
 
     private void initChannelMap() {
-        channelMap.put(PLAYSTATUS_STATE, CHANNEL_PLAY_MODE);
-        channelMap.put(PLAYSTATUS_MEDIA_TYPE, CHANNEL_MEDIA_TYPE);
-        channelMap.put(PLAYSTATUS_ALBUM, CHANNEL_ALBUM);
-        channelMap.put(PLAYSTATUS_ARTIST, CHANNEL_ARTIST);
-        channelMap.put(PLAYSTATUS_TITLE, CHANNEL_TITLE);
-        channelMap.put(PLAYSTATUS_GENRE, CHANNEL_GENRE);
-        // channelMap.put(PLAYSTATUS_ARTWORK_URL, CHANNEL_ARTWORK_URL);
         channelMap.put(PLAYSTATUS_POSITION, CHANNEL_POSITION);
         channelMap.put(PLAYSTATUS_TTIME, CHANNEL_TOTAL_TIME);
+        channelMap.put(PLAYSTATUS_TPERCENT, CHANNEL_TOTAL_PERCENT);
+        channelMap.put(PLAYSTATUS_MEDIA_TYPE, CHANNEL_MEDIA_TYPE);
+        channelMap.put(PLAYSTATUS_STATE, CHANNEL_PLAY_MODE);
         channelMap.put(PLAYSTATUS_REPEAT, CHANNEL_REPEAT_STATE);
         channelMap.put(PLAYSTATUS_SHUFFLE, CHANNEL_SHUFFLE);
+        channelMap.put(PLAYSTATUS_ALBUM, CHANNEL_ALBUM);
+        channelMap.put(PLAYSTATUS_ARTIST, CHANNEL_ARTIST);
+        channelMap.put(PLAYSTATUS_GENRE, CHANNEL_GENRE);
+        channelMap.put(PLAYSTATUS_TITLE, CHANNEL_TITLE);
+        // channelMap.put(PLAYSTATUS_ARTWORK_URL, CHANNEL_ARTWORK_URL);
     }
 
     private void initPlayStatus() {
         position = 0l;
         totalTime = 0l;
-        playStatus.put(CHANNEL_POSITION, Sec2Time(position.toString()));
-        playStatus.put(CHANNEL_TOTAL_TIME, Sec2Time(totalTime.toString()));
+        playStatus.put(PLAYSTATUS_POSITION, Sec2Time(position.toString()));
+        playStatus.put(PLAYSTATUS_TTIME, Sec2Time(totalTime.toString()));
+        playStatus.put(PLAYSTATUS_TPERCENT, "0%");
         playStatus.put(PLAYSTATUS_MEDIA_TYPE, MEDIA_TYPE_UNKNOWN);
         playStatus.put(PLAYSTATUS_STATE, PLAY_STATE_IDLE);
         playStatus.put(PLAYSTATUS_REPEAT, REPEAT_STATE_OFF);

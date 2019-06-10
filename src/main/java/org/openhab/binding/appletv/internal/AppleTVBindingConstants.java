@@ -51,15 +51,16 @@ public class AppleTVBindingConstants {
     public static final String CHANNEL_ARTWORK_URL = "artworkUrl";
     public static final String CHANNEL_POSITION = "position";
     public static final String CHANNEL_TOTAL_TIME = "totalTime";
+    public static final String CHANNEL_TOTAL_PERCENT = "totalPercent";
     public static final String CHANNEL_REPEAT_STATE = "repeat";
     public static final String CHANNEL_SHUFFLE = "shuffle";
 
     // Special keys, will be mapped to the configured key sequences
-    public static final String KEY_MOVIE = "movie";
+    public static final String KEY_MOVIES = "movies";
     public static final String KEY_MUSIC = "music";
     public static final String KEY_TVSHOWS = "tvshows";
 
-    // PyATV commands
+    // PyATV status events
     public static final String PLAYSTATUS_STATE = "play_state";
     public static final String PLAYSTATUS_MEDIA_TYPE = "media_type";
     public static final String PLAYSTATUS_TITLE = "title";
@@ -69,8 +70,10 @@ public class AppleTVBindingConstants {
     public static final String PLAYSTATUS_ARTWORK_URL = "artwork_url";
     public static final String PLAYSTATUS_POSITION = "position";
     public static final String PLAYSTATUS_TTIME = "total_time";
+    public static final String PLAYSTATUS_TPERCENT = "total_percent";
     public static final String PLAYSTATUS_REPEAT = "repeat";
     public static final String PLAYSTATUS_SHUFFLE = "shuffle";
+    public static final String EVENT_PAIRING_GUID = "pairing_guid";
 
     // Media types
     public static final String MEDIA_TYPE_UNKNOWN = "Unknown";

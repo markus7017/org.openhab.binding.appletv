@@ -5,7 +5,6 @@ from pyatv import (const, exceptions)
 
 def media_kind(kind):
     """Convert iTunes media kind to API representation."""
-    print('Media type={0}'.format(str(kind)))
     if kind in [0]:
         return const.MEDIA_TYPE_NONE
     if kind in [1]:
@@ -22,15 +21,17 @@ def media_kind(kind):
 
 def media_type_str(mediatype):
     """Convert internal API media type to string."""
-    if mediatype == const.MEDIA_TYPE_UNKNOWN:
-        return 'Unknown'
+    if mediatype == const.MEDIA_TYPE_NONE:
+        return 'None'
     if mediatype == const.MEDIA_TYPE_VIDEO:
         return 'Video'
     if mediatype == const.MEDIA_TYPE_MUSIC:
         return 'Music'
     if mediatype == const.MEDIA_TYPE_TV:
         return 'TV'
-    return 'Unsupported'
+    if mediatype == const.MEDIA_TYPE_UNKNOWN:
+        return 'Unknown'
+    return 'Unsupported ({})'.format(mediatype)
 
 
 def playstate(state):

@@ -31,6 +31,7 @@ import org.openhab.binding.appletv.internal.AppleTVBindingConfiguration;
 import org.openhab.binding.appletv.internal.AppleTVHandler;
 import org.openhab.binding.appletv.internal.AppleTVHandlerFactory;
 import org.openhab.binding.appletv.internal.AppleTVLogger;
+import org.openhab.binding.appletv.internal.jpy.LibATVCallback;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
@@ -45,7 +46,7 @@ import com.google.gson.Gson;
  * @author Markus Michels - Initial contribution
  */
 @Component(service = DiscoveryService.class, immediate = true, configurationPid = "discovery.appletv")
-public class AppleTVDiscoveryService extends AbstractDiscoveryService {
+public class AppleTVDiscoveryService extends AbstractDiscoveryService implements LibATVCallback {
     private final AppleTVLogger logger = new AppleTVLogger(AppleTVHandler.class, "Discovery");
     private AppleTVHandlerFactory handlerFactory = null;
     private ScheduledFuture<?> discoveryJob;
@@ -75,16 +76,17 @@ public class AppleTVDiscoveryService extends AbstractDiscoveryService {
     protected void activate(@Nullable Map<@NonNull String, @Nullable Object> configProperties) {
         logger.debug("Config Parameters: {}", configProperties);
         super.activate(configProperties); // starts background discovery
+        bindingConfig.update(new Configuration(configProperties).as(AppleTVBindingConfiguration.class));
     }
 
     @Override
     @Modified
-    protected void modified(Map<String, Object> config) {
-        super.modified(config);
+    protected void modified(Map<String, Object> configProperties) {
+        super.modified(configProperties);
         // We update instead of replace the configuration object, so that if the user updates the
         // configuration, the values are automatically available in all handlers. Because they all
         // share the same instance.
-        bindingConfig.update(new Configuration(config).as(AppleTVBindingConfiguration.class));
+        bindingConfig.update(new Configuration(configProperties).as(AppleTVBindingConfiguration.class));
     }
 
     @Override
@@ -134,6 +136,14 @@ public class AppleTVDiscoveryService extends AbstractDiscoveryService {
         logger.info("Apple-TV discovery completed");
     }
 
+    protected void autoDiscover() {
+        if (!bindingConfig.autoDiscovery) {
+            logger.trace("Auto discovery is disabled, skip scan");
+            return;
+        }
+        startScan();
+    }
+
     private DiscoveryResult createDiscoveryResult(ATVDevice device, Map<String, Object> properties) {
         ThingUID thingUID = createThingUID(device);
         return DiscoveryResultBuilder.create(thingUID).withLabel(device.name).withProperties(properties)
@@ -160,6 +170,7 @@ public class AppleTVDiscoveryService extends AbstractDiscoveryService {
 
     @Override
     protected void startBackgroundDiscovery() {
+        // logger.debug("startBackgroundDiscovery");
     }
 
     @Override
@@ -177,13 +188,45 @@ public class AppleTVDiscoveryService extends AbstractDiscoveryService {
 
             logger.info("Starting background discovery");
             if (discoveryJob == null || discoveryJob.isCancelled()) {
-                discoveryJob = scheduler.scheduleWithFixedDelay(this::startScan, 20, 15 * 60, TimeUnit.SECONDS);
+                discoveryJob = scheduler.scheduleWithFixedDelay(this::autoDiscover, 20, 15 * 60, TimeUnit.SECONDS);
             }
         }
     }
 
     public void unsetAppleTVHandlerFactory(AppleTVHandlerFactory handlerFactory) {
         this.handlerFactory = null;
+    }
+
+    @Override
+    public void info(String message) {
+        logger.info("{}", message);
+    }
+
+    @Override
+    public void debug(String message) {
+        logger.debug("{}", message);
+    }
+
+    @Override
+    public void statusEvent(String prop, String input) {
+        logger.debug("Unexpected call to AppleTVDiscoveryService.statusEvent()");
+
+    }
+
+    @Override
+    public void devicesDiscovered(@NonNull String json) {
+        logger.debug("Unexpected call to AppleTVDiscoveryService.devicesDiscovered()");
+
+    }
+
+    @Override
+    public void generatedDeviceId(@NonNull String id) {
+        logger.debug("Unexpected call to AppleTVDiscoveryService.generatedDeviceId()");
+    }
+
+    @Override
+    public void pairingResult(boolean result, @NonNull String message) {
+        logger.debug("Unexpected call to AppleTVDiscoveryService.pairingResult()");
     }
 
 }

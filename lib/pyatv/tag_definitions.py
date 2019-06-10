@@ -105,4 +105,4 @@ _TAGS = {
 def lookup_tag(name):
     """Look up a tag based on its key. Returns a DmapTag."""
     return next((_TAGS[t] for t in _TAGS if t == name),
-                DmapTag(_read_unknown, 'unknown tag'))
+                DmapTag(_read_unknown, 'unknown tag ({})'.format(name)))

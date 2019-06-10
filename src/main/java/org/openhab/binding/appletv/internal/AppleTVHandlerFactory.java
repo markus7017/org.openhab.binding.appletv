@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.thing.Thing;
@@ -21,6 +22,7 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandlerFactory;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandlerFactory;
+import org.openhab.binding.appletv.internal.jpy.LibATVCallback;
 import org.openhab.binding.appletv.internal.jpy.LibPyATV;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -30,19 +32,19 @@ import org.osgi.service.component.annotations.Component;
  * The {@link AppleTVHandlerFactory} is responsible for creating things and thing
  * handlers.
  *
- * @author markus7017 - Initial contribution
+ * @author Markus Michels - Initial contribution
  */
 @NonNullByDefault
 @Component(service = { ThingHandlerFactory.class, AppleTVHandlerFactory.class }, configurationPid = "binding.appletv")
-public class AppleTVHandlerFactory extends BaseThingHandlerFactory {
+public class AppleTVHandlerFactory extends BaseThingHandlerFactory implements LibATVCallback {
     private final AppleTVLogger logger = new AppleTVLogger(AppleTVHandlerFactory.class, "Factory");
     private AppleTVBindingConfiguration bindingConfig = new AppleTVBindingConfiguration();
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     private @Nullable LibPyATV pyATV = null;
-    private String jsonDevices = "";
-    private String lastDeviceId = "";
+    private @NonNull String jsonDevices = "";
+    private @NonNull String lastDeviceId = "";
 
     /**
      * Activate the bundle: save properties
@@ -62,25 +64,6 @@ public class AppleTVHandlerFactory extends BaseThingHandlerFactory {
     public void setBindingConfig(AppleTVBindingConfiguration bindingConfig) {
         this.bindingConfig.update(bindingConfig);
         logger.info("Binding configuration refreshed");
-
-        if (bindingConfig.doPairing) {
-            scheduler.execute(() -> {
-                try {
-                    logger.info("Initiate pairing, RemoteName={}, PIN={}", bindingConfig.remoteName,
-                            bindingConfig.pairingPIN);
-                    pyATV.pairDevice(this, bindingConfig.remoteName, bindingConfig.pairingPIN);
-                } catch (AppleTVException e) {
-                    logger.info("FATAL: Pairing request failed!");
-                } finally {
-                    /*
-                     * Configuration configuration = this.getConfig();
-                     * configuration.remove("doPairing");
-                     * configuration.put("doPairing", "false");
-                     * this.updateConfiguration(configuration);
-                     */
-                }
-            });
-        }
     }
 
     @Override
@@ -120,6 +103,11 @@ public class AppleTVHandlerFactory extends BaseThingHandlerFactory {
         return "";
     }
 
+    public boolean pairDevice(AppleTVHandler thingHandler, String remoteName, String pairingPIN)
+            throws AppleTVException {
+        return pyATV.pairDevice(thingHandler, remoteName, pairingPIN);
+    }
+
     @SuppressWarnings("null")
     String getLibPath() {
         return pyATV.getLibPath();
@@ -135,20 +123,36 @@ public class AppleTVHandlerFactory extends BaseThingHandlerFactory {
      *
      * @param json
      */
+    @Override
     public void devicesDiscovered(String json) {
         logger.debug("Discovered devices: {}", json);
         jsonDevices = json;
     }
 
+    @Override
+
     public void generatedDeviceId(String id) {
         lastDeviceId = id;
     }
 
+    @Override
     public void info(String message) {
         logger.info("{}", message);
     }
 
+    @Override
     public void debug(String message) {
         logger.debug("{}", message);
+    }
+
+    @Override
+    public void statusEvent(String prop, String input) {
+        logger.debug("Unexpected call to AppleTVHandlerFactory.statusEvent()");
+
+    }
+
+    @Override
+    public void pairingResult(boolean result, String message) {
+        logger.debug("Unexpected call to AppleTVHandlerFactory.pairingResult()");
     }
 }

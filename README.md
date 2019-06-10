@@ -12,11 +12,9 @@ Release: alpha2, check master branch for stable release
 Known issues:
 
 * Binding configuration and device pairing needs to be implemented
-* On macOS Python 3.6 is used, on Linux Python 3.5
 * Support for Synology NAS (amd64) is not verified
 * Not yet very well tested with more than one Apple-TV (should work, may cause timing issues)
 * The binding copies the embedded pyatv modules to a temp folder on each startup, this will be solved with upcoming binding configuration. 
-* If some special conditions you'll see tons of exceptions when the binding is started. This needs to be reproduced and fixed.
 * The Python module contains some output to stdout/debug, this needs to be optimzed
 
 Please note:
@@ -70,18 +68,18 @@ Proceed with Thing Configuration below.
 
 For now the bindinng is not available on the Eclipse Smart Home Market Place nor part of the openHAB distribution so you need to install it manually.
 
-As described the binding integrates the Phyton-based PyATV project so you need to install Python 3.5 and the required modules:
+As described the binding integrates the Phyton-based PyATV project so you need to install Python 3.6.5 and the required modules:
 
 * Platform software packages:
 sudo apt-get update
-sudo apt-get install python3.5 python3-pip libpython3.5 python3-jpy
+sudo apt-get install python3.6 python3-pip libpython3.6 python3-jpy
 sudo apt-get install avahi-utils
-Python 3.5 for macOS can be found here: https://www.python.org/downloads/mac-osx/
+Python 3.6 for macOS can be found here: https://www.python.org/downloads/mac-osx/
 
 * Python modules:
-sudo python3.5 -m pip install pyatv zeroconf sh
+sudo python3.6 -m pip install pyatv zeroconf sh
 On macOS use Homebrew to install the Python 3.6(!) and additional modules.
-Make sure those modules go into the Python 3.5/3.6 folders. if you have multiple versions installed (by using the pip3.5/pip3.6 command).
+Make sure those modules go into the Python 3.6 folders. if you have multiple versions installed (by using the pip3.5/pip3.6 command).
 
 * Verification
 You should verify the installation before installing/configuring the binding:
@@ -113,18 +111,19 @@ You could use Paper UI to run auto discvery from the Inbox or to add a thing man
 |-----------|-----------|----------------------------------------------------------------------------------|
 |control    | remoteKey |Send a key or key sequence to the Apple-TV, see below for valid keys              |
 |playStatus | playMode  |Current play mode: No Media/Idle/Loading/Playing/Paused/Fast Forward/Fast Backward|
-|           | mediaType |Media type being played: None/Music/Video/TV/Unknown                              ]
-|           | title     |Title of current media.                                                           ]
-|           | artist    |Artist - only for Media Music                                                     ]
-|           | album     |Album - only for Media Music                                                      ]
-|           | genre     |Genre - only for Media Music                                                      ]
-|           | position  |Position within the media. While playing the position gets updated in intervals.  ]
-|           |           |The position could be changed, send the following format to the channel.          ]
-|           |           |+<n>: Move forward, e.g. +10 moves 10sec forward;  +5:00 moves 5min forward.      ]
-|           |           |-<n>: Move reverse, e.g. -10 moves 10sec backward; +7:00 moves 7min backward.     ]
-|           | totalTime |Total time/duration of the media currently plaing. Note: could be 00:00:00!       ]
-|           | shuffle   |Music Shuffle Mode - True: shuffeling, False: no shuffeling                       ]
-|           | repeat    |Music Repeat  Mode - Off: no repeat, Track: repeat track, All: repeat playlis     ]
+|           | mediaType |Media type being played: None/Music/Video/TV/Unknown                              |
+|           | title     |Title of current media.                                                           |
+|           | artist    |Artist - only for Media Music                                                     |
+|           | album     |Album - only for Media Music                                                      |
+|           | genre     |Genre - only for Media Music                                                      |
+|           | position  |Position within the media. While playing the position gets updated in intervals.  |
+|           |           |The position could be changed, send the following format to the channel.          |
+|           |           |+<n>: Move forward, e.g. +10 moves 10sec forward;  +5:00 moves 5min forward.      |
+|           |           |-<n>: Move reverse, e.g. -10 moves 10sec backward; +7:00 moves 7min backward.     |
+|           |           |<n>%: Move relativ of the total duration (0%=start...100%=end).                   |
+|           | totalTime |Total time/duration of the media currently plaing. Note: could be 00:00:00!       |
+|           | shuffle   |Music Shuffle Mode - True: shuffeling, False: no shuffeling                       |
+|           | repeat    |Music Repeat  Mode - Off: no repeat, Track: repeat track, All: repeat playlis     |
 
 ## Keys
 
@@ -143,15 +142,15 @@ The following keys could ne semd with channel remoteKey
  - top_menu - Go to main menu (long press menu)
  - menu - Press key menu
 
+You could also send a key sequence, e.g. "top_menu up up left left select"
+
 There are special keys, which will be mapped into a key sequence:
 
-- movie - go to the Movie selection
-- music - go to the Music selection
+- movies - go to the Movies selection 
 - tvshows - go to the TV Show selection
+- music - go to the Music selection
 
-The key sequences can be configured in the thing settings if the defaults don't work for your setup. RThe sequence must match the order of the menu items on the main menu.
-
-Note: You could also send a key sequence, e.g. "top_menu up up left left select"
+Those keys will be mapped to a sequence of keys to navigate within the Apple-TV's menu. The sequences send for each of them can be configured in the thing settings if the defaults don't work for your setup. This depends on your personal menu layout. The sequence must match the order of the menu items on the main menu.
 
 ## Full Example
 

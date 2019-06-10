@@ -33,7 +33,7 @@ import org.openhab.binding.appletv.internal.AppleTVLogger;
 /**
  * The {@link LibPyATV} wraps the PyATV library
  *
- * @author markus7017 - Initial contribution
+ * @author Markus Michels - Initial contribution
  */
 public class LibPyATV {
     public interface PyATVProxy {
@@ -289,8 +289,7 @@ public class LibPyATV {
      *
      * @throws AppleTVException
      */
-    public boolean pairDevice(AppleTVHandlerFactory handler, String remoteName, String pairingPIN)
-            throws AppleTVException {
+    public boolean pairDevice(AppleTVHandler handler, String remoteName, String pairingPIN) throws AppleTVException {
         String args[] = new String[4];
         int a = 0;
         if (!remoteName.isEmpty()) {

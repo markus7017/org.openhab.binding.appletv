@@ -14,7 +14,7 @@ from zeroconf import ServiceInfo
 import netifaces
 from pyatv import tags
 
-_LOGGER = logging.getLogger(__name__)
+import pyatv_api
 
 DEFAULT_PAIRING_GUID = '0000000000000001'
 
@@ -64,14 +64,14 @@ class PairingHandler:
 
         # Get the allocated (random port) and include it in zeroconf service
         allocated_port = self._server.sockets[0].getsockname()[1]
-        _LOGGER.debug('Started pairing web server at port %d', allocated_port)
+        pyatv_api.javaHandler.debug('Started pairing web server at port {}'.format(allocated_port))
 
         self._setup_zeroconf(zeroconf, allocated_port)
 
     @asyncio.coroutine
     def stop(self):
         """Stop pairing server and unpublish service."""
-        _LOGGER.debug('Shutting down pairing server')
+        pyatv_api.javaHandler.debug('Shutting down pairing server')
         if self._web_server is not None:
             yield from self._web_server.shutdown()
             self._server.close()
@@ -95,7 +95,7 @@ class PairingHandler:
             socket.inet_aton(str(address)), port, 0, 0, props)
         zeroconf.register_service(service)
 
-        _LOGGER.debug('Published zeroconf service: %s', service)
+        pyatv_api.javaHandler.debug('Published zeroconf service: {}'.format(service))
 
     def _setup_zeroconf(self, zeroconf, port):
         for ipaddr in _get_private_ip_addresses():
@@ -106,8 +106,8 @@ class PairingHandler:
         """Respond to request if PIN is correct."""
         service_name = request.rel_url.query['servicename']
         received_code = request.rel_url.query['pairingcode'].lower()
-        _LOGGER.info('Got pairing request from %s with code %s',
-                     service_name, received_code)
+        _pyatv_api.javaHandler.info('Got pairing request from {0} with code {1}'.format(
+                     service_name, received_code))
 
         if self._verify_pin(received_code):
             cmpg = tags.uint64_tag('cmpg', int(self.pairing_guid, 16))
@@ -115,9 +115,11 @@ class PairingHandler:
             cmty = tags.string_tag('cmty', 'iPhone')
             response = tags.container_tag('cmpa', cmpg + cmnm + cmty)
             self.has_paired = True
+            pyatv_api.javaHandler.pairingResult(true, "ok")
             return web.Response(body=response)
 
         # Code did not match, generate an error
+        pyatv_api.javaHandler.pairingResult(false, "PIN mismatch")
         return web.Response(status=500)
 
     def _verify_pin(self, received_code):
@@ -132,6 +134,6 @@ class PairingHandler:
             merged.write("\x00")
 
         expected_code = hashlib.md5(merged.getvalue().encode()).hexdigest()
-        _LOGGER.debug('Got code %s, expects %s', received_code, expected_code)
+        pyatv_api.javaHandler.debug('Got code {0}, expected {1}'.format(received_code, expected_code))
 
         return received_code == expected_code

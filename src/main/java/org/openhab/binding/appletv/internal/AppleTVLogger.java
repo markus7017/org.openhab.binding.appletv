@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 /**
  * The {@link AppleTVLogger} implements logging
  *
- * @author markus7017 - Initial contribution
+ * @author Markus Michels - Initial contribution
  */
 public class AppleTVLogger {
 

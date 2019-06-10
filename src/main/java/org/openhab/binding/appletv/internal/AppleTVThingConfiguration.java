@@ -11,12 +11,17 @@ package org.openhab.binding.appletv.internal;
 /**
  * The {@link AppleTVThingConfiguration} class contains fields mapping thing configuration parameters.
  *
- * @author markus7017 - Initial contribution
+ * @author Markus Michels - Initial contribution
  */
 public class AppleTVThingConfiguration {
 
     public String ipAddress;
     public String loginId;
+
+    public boolean doPairing;
+    public String remoteName;
+    public String pairingPIN;
+
     public String authenticationPIN;
 
     public String keyMovie;

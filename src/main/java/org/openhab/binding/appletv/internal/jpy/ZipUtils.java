@@ -21,7 +21,7 @@ import org.openhab.binding.appletv.internal.AppleTVLogger;
 /**
  * The {@link ZipUtils} provides functions to handle zip files (extract)
  *
- * @author markus7017 - Initial contribution
+ * @author Markus Michels - Initial contribution
  */
 public class ZipUtils {
     private final AppleTVLogger logger = new AppleTVLogger(ZipUtils.class, "ZipUtils");
